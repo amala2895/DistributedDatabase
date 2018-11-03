@@ -35,7 +35,6 @@ class Site {
     Variable newVariable = new Variable(i, val);
     indexVariable.put(i, newVariable);
   }
-
   boolean hasVariable(int idx) {
     return indexVariable.containsKey(idx);
   }
