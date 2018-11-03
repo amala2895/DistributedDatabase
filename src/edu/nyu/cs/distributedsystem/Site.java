@@ -1,16 +1,44 @@
 
 package edu.nyu.cs.distributedsystem;
 
-class Site {
-	private:
-		enum siteStatus 
-	    { 
-	        DOWN,RECOVERING, UP; 
-	    }
+import java.util.HashMap;
+import java.util.Map;
 
-		Map<int,Variable> varMap; 
-		
-		bool processTransaction(int transactionType, Variable var);
-		
+class Site {
+  enum Status {
+    DOWN, RECOVERING, UP;
+  }
+
+  private Status currentStatus;
+  private Map<Integer, Variable> indexVariable;
+  private int siteNumber;
+
+  Site(int i) {
+    siteNumber = i;
+    indexVariable = new HashMap<Integer, Variable>();
+    currentStatus = Status.UP;
+  }
+
+  int getSiteNumber() {
+    return siteNumber;
+  }
+
+  Status getSiteStatus() {
+    return currentStatus;
+  }
+
+  void setSiteStatus(Status s) {
+    currentStatus = s;
+  }
+
+  void addVariable(int i, int val) {
+    Variable newVariable = new Variable(i, val);
+    indexVariable.put(i, newVariable);
+  }
+
+  boolean hasVariable(int idx) {
+    return indexVariable.containsKey(idx);
+  }
+
 
 }
