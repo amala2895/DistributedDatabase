@@ -36,6 +36,7 @@ class Site {
     Variable newVariable = new Variable(i, val);
     indexVariable.put(i, newVariable);
   }
+
   boolean hasVariable(int idx) {
     return indexVariable.containsKey(idx);
   }
@@ -43,5 +44,9 @@ class Site {
   Variable getVariable(int val_id) {
 	  return indexVariable.get(val_id);
   }
+  int getVariableValue(int i) {
+    return indexVariable.get(i).getVal();
+  }
+
 
 }
