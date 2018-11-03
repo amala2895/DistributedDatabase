@@ -22,7 +22,8 @@ class Site {
   int getSiteNumber() {
     return siteNumber;
   }
-
+  
+ 
   Status getSiteStatus() {
     return currentStatus;
   }
