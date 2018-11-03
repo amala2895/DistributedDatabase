@@ -1,6 +1,7 @@
 package edu.nyu.cs.distributedsystem;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.time.Instant;
 
@@ -8,22 +9,64 @@ public class TransactionManager {
 	
 	static Map<Integer,Integer> transaction_variable_map = new HashMap<Integer,Integer>();
 	static Map<Integer,Transaction> transactions = new HashMap<Integer,Transaction>();
+	static Map<Integer,Site> sites = new HashMap<Integer,Site>();
+	static Map<Integer,List<Site>> variable_site_map = new HashMap<Integer,List<Site>>();
+	
+	
+	//Initialize the sites
+	public static void initializeSites() {
+		Site site = null;
+		for(int i=1;i<=10;i++)
+		{
+			site = new Site(i);
+			sites.put(i, site);
+		}
+	}
+	
+	//Initialize the variables
+	public static void initializeVariables() {
+		Variable var = null;
+		
+		for(int i=1;i<=20;i++) {
+			var = new Variable(i , 10 * i);
+			
+			if(i%2 == 0){
+				for(int j=1;j<=10;j++) {
+					sites.get(j).addVariable(i,10*i);
+				}
+			}
+			else {
+				for(int j=1;j<=10;j++) {
+					if(j == 1 + i % 10)
+						sites.get(j).addVariable(i,10*i);
+				}
+			}
+		}
+	}
 	
 	//This function creates a transaction
-	public static void beginTransaction(int trans_id, String tran_type) {
+	public static void beginTransaction(int trans_id, String trans_type) {
 		
 		long currTime = Instant.now().getEpochSecond();
-		Transaction txn = new Transaction(trans_id, currTime);
+		Transaction txn = new Transaction(trans_id, currTime, trans_type);
 		
 		transactions.put(trans_id, txn);
 	}
 	
 	//This function commits a transaction
-	public static void  commitTransaction(int trans_id) {
+	public static boolean  commitTransaction(int trans_id) {
 		
-		Transaction txn;
+		Transaction txn = null;
+		
 		if(transactions.containsKey(trans_id))
 			txn = transactions.get(trans_id);
+		else
+			return false;
+		
+		if(txn != null)
+			txn.executeOperations();
+		
+		return true;
 		
 	}
 	
@@ -57,11 +100,34 @@ public class TransactionManager {
 		
 	}
 	
+	//This function will create the write operation and add it to the transaction 
 	public static void makeWriteOperation(int trans_id,int var_id, int var_value) {
+		
+		Transaction txn = null;
+		Operation oper = new Operation(trans_id, var_id, var_value);
+		
+		if(transactions.containsKey(trans_id))
+			txn = transactions.get(trans_id);
+		
+		
+		if(txn != null)
+			txn.addOperationToTransaction(oper);
 		
 	}
 	
+	//This function will create the read operation and add it to the transaction
 	public static void makeReadOperation(int trans_id, int var_id) {
+
+		Transaction txn = null;
+		Operation oper = new Operation(trans_id, var_id);
+		
+		if(transactions.containsKey(trans_id))
+			txn = transactions.get(trans_id);
+		
+		
+		if(txn != null)
+			txn.addOperationToTransaction(oper);
+		
 	
 	} 
 	

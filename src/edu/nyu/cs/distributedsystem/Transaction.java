@@ -5,18 +5,24 @@ import java.util.List;
 
 class Transaction{
 	private
-		int transact_id;
-		long transact_start_time;
-		List<Operation> transact_operations;
+		int txn_id;
+		long txn_start_time;
+		List<Operation> txn_operations;
 		
-		Transaction(int id, long start_time){
-			this.transact_id = id;
-			this.transact_start_time = start_time;
-			transact_operations = new ArrayList<>();
+		Transaction(int id, long start_time, String trans_type){
+			this.txn_id = id;
+			this.txn_start_time = start_time;
+			txn_operations = new ArrayList<>();
 		}
 		
 		boolean addOperationToTransaction(Operation oper) {
 			return true;
 		}
+		
+		void executeOperations() {
+			
+		}
+		
+
 
 }
