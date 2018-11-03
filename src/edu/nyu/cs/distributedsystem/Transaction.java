@@ -3,11 +3,18 @@ package edu.nyu.cs.distributedsystem;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.nyu.cs.distributedsystem.Site.Status;
+
 class Transaction{
-	private
-		int txn_id;
-		long txn_start_time;
-		List<Operation> txn_operations;
+	
+		enum Type {
+	    RW, RO;
+		}
+
+		private Type txn_type;
+		private int txn_id;
+		private long txn_start_time;
+		private List<Operation> txn_operations;
 		
 		Transaction(int id, long start_time, String trans_type){
 			this.txn_id = id;
