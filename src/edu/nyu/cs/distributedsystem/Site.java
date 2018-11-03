@@ -40,5 +40,8 @@ class Site {
     return indexVariable.containsKey(idx);
   }
 
+  Variable getVariable(int val_id) {
+	  return indexVariable.get(val_id);
+  }
 
 }

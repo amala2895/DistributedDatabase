@@ -1,6 +1,7 @@
 package edu.nyu.cs.distributedsystem;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.time.Instant;
@@ -10,9 +11,9 @@ public class TransactionManager {
 	static Map<Integer,Integer> transaction_variable_map = new HashMap<Integer,Integer>();
 	static Map<Integer,Transaction> transactions = new HashMap<Integer,Transaction>();
 	static Map<Integer,Site> sites = new HashMap<Integer,Site>();
-	static Map<Integer,List<Site>> variable_site_map = new HashMap<Integer,List<Site>>();
-	
-	
+	static Map<Integer,List<Integer>> variable_site_map = new HashMap<Integer,List<Integer>>();
+
+		
 	//Initialize the sites
 	public static void initializeSites() {
 		Site site = null;
@@ -29,18 +30,25 @@ public class TransactionManager {
 		
 		for(int i=1;i<=20;i++) {
 			var = new Variable(i , 10 * i);
-			
+			List<Integer> siteList = new LinkedList<Integer>();
+ 			
 			if(i%2 == 0){
 				for(int j=1;j<=10;j++) {
 					sites.get(j).addVariable(i,10*i);
+					siteList.add(j);	
 				}
 			}
 			else {
 				for(int j=1;j<=10;j++) {
-					if(j == 1 + i % 10)
+					if(j == 1 + i % 10) {
 						sites.get(j).addVariable(i,10*i);
+						siteList.add(j);			
+					}
+					
 				}
 			}
+			
+			variable_site_map.put(i, siteList);
 		}
 	}
 	
@@ -77,12 +85,40 @@ public class TransactionManager {
 	}
 	
 	//This function puts a lock on the variable being written by some transaction
-	public static void lockVariable(int var) {
+	public static boolean lockVariable(int var_id) {
 		
-	}
+		    
+			if(var_id%2 == 0){
+				for(int j=1;j<=10;j++) {
+					if(!sites.get(j).getVariable(var_id).isLocked()) {
+						sites.get(j).getVariable(var_id).lockVariable();
+					}
+					else {
+						System.out.println("Lock has been taken on this variable");
+						return false;
+					}
+						
+				}
+			}
+			else {
+				for(int j=1;j<=10;j++) {
+					if(j == 1 + var_id % 10) {
+						if(!sites.get(j).getVariable(var_id).isLocked()) {
+						sites.get(j).getVariable(var_id).lockVariable();
+						}
+						else {
+							System.out.println("Lock has been taken on this variable");
+							return false;
+						}
+					}
+				}
+			}
+			return true;
+		}
+	
 	
 	//This function remove lock from the variable once the transaction commits/aborts
-	public static void unlockVariable(int var) {
+	public static void unlockVariable(int var_id) {
 		
 	}
 	
@@ -110,8 +146,14 @@ public class TransactionManager {
 			txn = transactions.get(trans_id);
 		
 		
-		if(txn != null)
-			txn.addOperationToTransaction(oper);
+		if(txn != null) {
+			if(lockVariable(var_id))
+				txn.addOperationToTransaction(oper);
+			else {
+				//check the dependency between transactions 
+				// and check if there is a deadlock;
+			}
+		}
 		
 	}
 	
