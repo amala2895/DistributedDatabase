@@ -22,8 +22,8 @@ class Site {
   int getSiteNumber() {
     return siteNumber;
   }
-  
- 
+
+
   Status getSiteStatus() {
     return currentStatus;
   }
@@ -43,6 +43,14 @@ class Site {
 
   int getVariableValue(int i) {
     return indexVariable.get(i).getVal();
+  }
+
+  void printVariables() {
+    for (int i = 1; i < 10; i++) {
+      if (indexVariable.containsKey(i)) {
+        System.out.print("x" + i + ": " + indexVariable.get(i).getVal() + ", ");
+      }
+    }
   }
 
 
