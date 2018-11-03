@@ -6,10 +6,10 @@ import java.util.List;
 class Transaction{
 	private
 		int transact_id;
-		int transact_start_time;
+		long transact_start_time;
 		List<Operation> transact_operations;
 		
-		Transaction(int id, int start_time){
+		Transaction(int id, long start_time){
 			this.transact_id = id;
 			this.transact_start_time = start_time;
 			transact_operations = new ArrayList<>();

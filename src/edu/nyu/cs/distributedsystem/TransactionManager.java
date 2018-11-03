@@ -1,63 +1,77 @@
 package edu.nyu.cs.distributedsystem;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.time.Instant;
 
-class TransactionManager {
+public class TransactionManager {
 	
-	static Map<Integer,List<Integer>> transaction_variable_map = new HashMap<Integer,List<Integer>>();
+	static Map<Integer,Integer> transaction_variable_map = new HashMap<Integer,Integer>();
+	static Map<Integer,Transaction> transactions = new HashMap<Integer,Transaction>();
 	
 	//This function creates a transaction
-	static void beginTransaction(int trans_id, String tran_type) {
+	public static void beginTransaction(int trans_id, String tran_type) {
 		
+		long currTime = Instant.now().getEpochSecond();
+		Transaction txn = new Transaction(trans_id, currTime);
+		
+		transactions.put(trans_id, txn);
 	}
 	
 	//This function commits a transaction
-	static void  commitTransaction(int trans_id) {
+	public static void  commitTransaction(int trans_id) {
+		
+		Transaction txn;
+		if(transactions.containsKey(trans_id))
+			txn = transactions.get(trans_id);
 		
 	}
 	
 	//This function ends a transaction by calling unlockVariables function
-	static void endTransaction(int trans_id) {
+	public static void endTransaction(int trans_id) {
 	
 		commitTransaction(trans_id);
 	}
 	
 	//This function puts a lock on the variable being written by some transaction
-	static void lockVariable(int var) {
+	public static void lockVariable(int var) {
 		
 	}
 	
 	//This function remove lock from the variable once the transaction commits/aborts
-	static void unlockVariable(int var) {
+	public static void unlockVariable(int var) {
 		
 	}
 	
 	
 	//This function will be called when there is a write operation by any transaction
-	static void addVariableToMap(int trans_id, int var_id) {
+	public static boolean addVariableToMap(int trans_id, int var_id) {
 		
 		/*Before adding to the map check if any other transaction 
 		 * has lock on the variable */
+		if(transaction_variable_map.containsKey(var_id))
+			return false; //Some transaction has already lock on the variable
 		
+		transaction_variable_map.put(var_id, trans_id);
+		return true;	
 		
 	}
 	
-	static void writeOperation(int trans_id,int var_id, int var_value) {
+	public static void makeWriteOperation(int trans_id,int var_id, int var_value) {
 		
 	}
-	static void readOperation(int trans_id, int var_id) {
+	
+	public static void makeReadOperation(int trans_id, int var_id) {
 	
 	} 
 	
 	//This function will make a site down
-	static void failSite(int site_id) {
+	public static void failSite(int site_id) {
 	
 	}
 
 	 //This function will recover a site from failure
-	 static void recoverSite(int site_id) {
+	 public static void recoverSite(int site_id) {
 		 
 	 }
 
