@@ -1,5 +1,6 @@
 package edu.nyu.cs.distributedsystem;
 
+import edu.nyu.cs.distributedsystem.TransactionType;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -167,8 +168,18 @@ public class TransactionManager {
 			txn = transactions.get(trans_id);
 		
 		
-		if(txn != null)
-			txn.addOperationToTransaction(oper);
+		if(txn != null) {
+			if(txn.getType() == TransactionType.RO)
+				txn.addOperationToTransaction(oper);
+			else {
+				if(lockVariable(var_id))
+					txn.addOperationToTransaction(oper);
+				else {
+					//check the dependency between transactions 
+					// and check if there is a deadlock;
+				}
+			}
+		}
 		
 	
 	} 
