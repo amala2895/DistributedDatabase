@@ -5,18 +5,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 class Site {
-  enum Status {
-    DOWN, RECOVERING, UP;
-  }
 
-  private Status currentStatus;
+  private SiteStatus currentStatus;
   private Map<Integer, Variable> indexVariable;
   private int siteNumber;
 
   Site(int i) {
     siteNumber = i;
     indexVariable = new HashMap<Integer, Variable>();
-    currentStatus = Status.UP;
+    currentStatus = SiteStatus.UP;
   }
 
   int getSiteNumber() {
@@ -24,11 +21,11 @@ class Site {
   }
 
 
-  Status getSiteStatus() {
+  SiteStatus getSiteStatus() {
     return currentStatus;
   }
 
-  void setSiteStatus(Status s) {
+  void setSiteStatus(SiteStatus s) {
     currentStatus = s;
   }
 
@@ -42,8 +39,9 @@ class Site {
   }
 
   Variable getVariable(int val_id) {
-	  return indexVariable.get(val_id);
+    return indexVariable.get(val_id);
   }
+
   int getVariableValue(int i) {
     return indexVariable.get(i).getVal();
   }
