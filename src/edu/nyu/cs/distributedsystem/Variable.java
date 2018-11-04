@@ -54,4 +54,9 @@ class Variable {
   boolean isJustRecovered() {
     return justRecovered;
   }
+
+void setJustRecovered(boolean status) {
+	justRecovered = status;
+ }
+
 }

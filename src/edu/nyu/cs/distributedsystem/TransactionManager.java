@@ -59,11 +59,45 @@ public class TransactionManager {
 
     Transaction txn = null;
     Operation oper = new Operation(trans_id, var_id, var_value);
+    List<Integer> variableList = null;
+    
+    
     if (transactions.containsKey(trans_id))
       txn = transactions.get(trans_id);
+    
     if (txn != null) {
-      if (isVariableLocked(var_id)) {
+      if (!isVariableLocked(var_id)) {
+    	 // Along side locking the variable, check if the variable is justRecovered
+    	  //If so, set the justRecovered flag of the variable to false for the site
+    	  //which is recovering. (Not for the DOWN or UP site)
+    	  // TO DO .. check for all the sites where this variable resides
+    	  // If the site status is RECOVERING, set the justRecovered  flag to false 
+    	  // for that copy of the variable.
         writelockVariable(var_id);
+        
+        if (var_id % 2 == 0) {
+            for (int j = 1; j <= 10; j++) {
+              if(sites.get(j).getVariable(var_id).isJustRecovered())
+            	  sites.get(j).getVariable(var_id).setJustRecovered(false);
+                   variableList = variable_site_map.get(j);
+                   //TO DO ..check all the variable on the site 
+                   //If justRecovered is set to false for each and site was recovering
+                   // set it to UP.
+                      
+                   }
+          } else {
+            for (int j = 1; j <= 10; j++) {
+              if (j == 1 + var_id % 10) {
+            	  if(sites.get(j).getVariable(var_id).isJustRecovered())
+                	  sites.get(j).getVariable(var_id).setJustRecovered(false);
+            	      variableList = variable_site_map.get(j);
+            	   //TO DO ..check all the variable on the site 
+                  //If justRecovered is set to false for each and site was recovering
+                  // set it to UP.
+              }
+            }
+          }
+        
         txn.addOperationToTransaction(oper);
       } else {
         // check the dependency between transactions
@@ -83,7 +117,7 @@ public class TransactionManager {
       if (txn.getType() == TransactionType.RO)
         txn.addOperationToTransaction(oper);
       else {
-        if (isVariableWriteLocked(var_id)) {
+        if (!isVariableWriteLocked(var_id)) {
           readlockVariable(var_id);
           txn.addOperationToTransaction(oper);
         } else {
@@ -97,11 +131,12 @@ public class TransactionManager {
   // This function will make a site down
   public static void failSite(int site_id) {
 
+	  sites.get(site_id).setSiteStatus(SiteStatus.DOWN);
   }
 
   // This function will recover a site from failure
   public static void recoverSite(int site_id) {
-
+	  sites.get(site_id).setSiteStatus(SiteStatus.RECOVERING);
   }
 
   public static void dump() {
