@@ -13,6 +13,7 @@ class Transaction {
   private long txn_start_time;
   private List<Operation> txn_operations;
   private Map<Variable, Integer> commitmap;
+  private List<Variable> readmap;
 
   Transaction(int id, long start_time, String trans_type) {
     this.txn_id = id;
@@ -22,6 +23,7 @@ class Transaction {
     else
       this.txn_type = TransactionType.RO;
     txn_operations = new ArrayList<>();
+    readmap = new ArrayList<>();
     commitmap = new HashMap<>();
   }
 
@@ -56,13 +58,23 @@ class Transaction {
 
   }
 
+  void addOperationToReadMap(Variable v) {
+    readmap.add(v);
+  }
+
   void commit() {
+    // commiting and unlocking variables that had WRITE operation
     for (Entry<Variable, Integer> e : commitmap.entrySet()) {
       Variable v = e.getKey();
       v.setVal(e.getValue());
+      v.unlockVariable();
 
     }
+    // unlocking variables that had READ operation
 
+    for (Variable v : readmap) {
+      v.unlockVariable();
+    }
   }
 
 }

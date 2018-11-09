@@ -149,8 +149,10 @@ public class TransactionManager {
           if (!isVariableWriteLocked(var_id)) {
 
             Variable v = readlockVariable(var_id);
+            txn.addOperationToReadMap(v);
             // we have the lock so we can read it
             txn.readOperation(v);
+
           } else {
             // wait
             waitingOperations.put(txn, oper);
@@ -217,6 +219,7 @@ public class TransactionManager {
 
     if (txn != null)
       txn.commit();
+
     return true;
   }
 
@@ -258,7 +261,7 @@ public class TransactionManager {
         Variable v = s.getVariable(var_id);
         if (!v.isJustRecovered()) {
           // if read or write locked return true
-          System.out.println("hi");
+
           if (v.isWriteLocked()) {
             toReturn = true;
 
@@ -274,7 +277,8 @@ public class TransactionManager {
 
   }
 
-  // This function puts a lock on the variable being read by some transaction
+  // This function puts a lock on the variable being read by some transaction returns the variable
+  // on one site
   private static Variable readlockVariable(int var_id) {
     List<Integer> s = variable_site_map.get(var_id);
     Variable v = null;
@@ -296,6 +300,7 @@ public class TransactionManager {
 
   // This function puts a lock on the variable being read by some transaction
   private static void writelockVariable(int var_id) {
+
     List<Integer> s = variable_site_map.get(var_id);
     for (Integer i : s) {
       // check if site is up
@@ -306,13 +311,8 @@ public class TransactionManager {
 
       }
     }
-
   }
 
-  // This function remove lock from the variable once the transaction commits/aborts
-  private static void unlockVariable(int var_id) {
-
-  }
 
 
   // This function will be called when there is a write operation by any transaction

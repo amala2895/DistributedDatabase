@@ -47,7 +47,7 @@ class Site {
   }
 
   void printVariables() {
-    for (int i = 1; i < 10; i++) {
+    for (int i = 1; i <= 20; i++) {
       if (indexVariable.containsKey(i)) {
         System.out.print("x" + i + ": " + indexVariable.get(i).getVal() + ", ");
       }

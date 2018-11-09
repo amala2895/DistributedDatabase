@@ -31,6 +31,8 @@ class Operation {
     // this.start_time = start_time;
   }
 
-
+  boolean isOperationWrite() {
+    return is_write_operation;
+  }
 
 }
