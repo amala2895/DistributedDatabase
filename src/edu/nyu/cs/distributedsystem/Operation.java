@@ -13,6 +13,7 @@ class Operation {
     this.is_end_operation = false;
   }
 
+
   Operation(int trans_id, int var_id, int var_value) {
     this.transaction_id = trans_id;
     this.variable_id = var_id;

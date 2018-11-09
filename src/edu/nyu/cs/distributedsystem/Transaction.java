@@ -14,7 +14,6 @@ class Transaction {
   private List<Operation> txn_operations;
   private Map<Variable, Integer> commitmap;
 
-
   Transaction(int id, long start_time, String trans_type) {
     this.txn_id = id;
     this.txn_start_time = start_time;

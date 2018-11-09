@@ -55,8 +55,8 @@ class Variable {
     return justRecovered;
   }
 
-void setJustRecovered(boolean status) {
-	justRecovered = status;
- }
+  void setJustRecovered(boolean status) {
+    justRecovered = status;
+  }
 
 }
