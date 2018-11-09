@@ -42,7 +42,7 @@ public class Parser {
         TransactionManager.dump();
       } else if (line.startsWith("dump(x")) {
         int vid = Integer.parseInt(line.substring(line.indexOf("x") + 1, line.indexOf(")")));
-        // TransactionManager.dumpVariable(vid);
+        TransactionManager.dumpVariable(vid);
       } else {
         int sid = Integer.parseInt(line.substring(line.indexOf("(") + 1, line.indexOf(")")));
         TransactionManager.dumpSite(sid);
