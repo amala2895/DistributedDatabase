@@ -31,6 +31,10 @@ class Transaction {
     return this.txn_type;
   }
 
+  long getStartTime() {
+    return this.txn_start_time;
+  }
+
   void addOperationToTransaction(Operation oper) {
     txn_operations.add(oper);
   }

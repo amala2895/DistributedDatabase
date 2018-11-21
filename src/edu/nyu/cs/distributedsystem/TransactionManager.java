@@ -1,6 +1,7 @@
 package edu.nyu.cs.distributedsystem;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -124,32 +125,27 @@ public class TransactionManager {
         // add to waiting transaction list
         // check the dependency between transactions
         // and check if there is a deadlock;
-        
+
         // check the dependency between transactions
         // and check if there is a deadlock;
-        //find the transaction which has lock on this variables
-        //and add the dependency edge.
-        independent_trans_id = transaction_variable_map.get(var_id);
-        if(DeadlockHandler.ifThereIsAnEdgeFromT1toT2(trans_id, independent_trans_id))
-        {
-          //Abort the latest  transaction
+        // find the transaction which has lock on this variables
+        // and add the dependency edge.
+        int independent_trans_id = transaction_variable_map.get(var_id);
+        if (DeadlockHandler.ifThereIsAnEdgeFromT1toT2(trans_id, independent_trans_id)) {
+          // Abort the latest transaction
           Transaction t1 = transactions.get(trans_id);
           Transaction t2 = transactions.get(independent_trans_id);
-
-          if(t1.txn_start_time <= t2.txn_start_time)
-          {
-            freedTrans = DeadlockHandler.getFreedTransactions(t2);
-            releaseResources(t2);
+          List<Integer> freedTrans = new ArrayList<Integer>();
+          if (t1.getStartTime() <= t2.getStartTime()) {
+            freedTrans = DeadlockHandler.getFreedTransactions(trans_id);
+            releaseResources(trans_id);
+          } else {
+            freedTrans = DeadlockHandler.getFreedTransactions(independent_trans_id);
+            releaseResources(independent_trans_id);
           }
-          else
-          {  
-            freedTrans = DeadlockHandler.getFreedTransactions(t2);
-            releaseResources(t1);
-          }
-        }
-        else
+        } else
           DeadlockHandler.addDependencyEdge(independent_trans_id, trans_id);
-              
+
       }
     }
 
@@ -188,40 +184,36 @@ public class TransactionManager {
 
         // check the dependency between transactions
         // and check if there is a deadlock;
-        
-        
-        independent_trans_id = transaction_variable_map.get(var_id);
-          if(DeadlockHandler.ifThereIsAnEdgeFromT1toT2(trans_id, independent_trans_id))
-          {
-            //Abort the latest  transaction
-            Transaction t1 = transactions.get(trans_id);
-            Transaction t2 = transactions.get(independent_trans_id);
 
-            List<Integer> freedTransactions = new List<Integer>();
 
-            if(t1.txn_start_time <= t2.txn_start_time)
-            {
-              freedTrans = DeadlockHandler.getFreedTransactions(t2);
-              releaseResources(t2);
-            }
-            else
-            {
-              freedTransactions = DeadlockHandler.getFreedTransactions(t1);
-              releaseResources(t1);
-            }
+        int independent_trans_id = transaction_variable_map.get(var_id);
+        if (DeadlockHandler.ifThereIsAnEdgeFromT1toT2(trans_id, independent_trans_id)) {
+          // Abort the latest transaction
+          Transaction t1 = transactions.get(trans_id);
+          Transaction t2 = transactions.get(independent_trans_id);
 
-            if(!freedTransactions.isEmpty())
-               //TO DO.. resume waiting transactions. How
-               // do we know if its write opeartion or read
-               //operation.
+          List<Integer> freedTrans = new ArrayList<Integer>();
+
+          if (t1.getStartTime() <= t2.getStartTime()) {
+            freedTrans = DeadlockHandler.getFreedTransactions(independent_trans_id);
+            releaseResources(independent_trans_id);
+          } else {
+            freedTrans = DeadlockHandler.getFreedTransactions(trans_id);
+            releaseResources(trans_id);
           }
-          else
+
+          if (!freedTrans.isEmpty()) {
+            // TO DO.. resume waiting transactions. How
+            // do we know if its write opeartion or read
+            // operation.
+          } else
             DeadlockHandler.addDependencyEdge(independent_trans_id, trans_id);
 
-        }       
+        }
 
       }
     }
+
   }
 
   // This function will make a site down
@@ -388,20 +380,19 @@ public class TransactionManager {
 
 
   // Abort/End the transaction and release resources
-  private static void releaseResources(int trans_id){
+  private static void releaseResources(int trans_id) {
 
-    //Remove the hold of transaction from the variables
-    for (int var_id : transaction_variable_map.keySet())
-    {
+    // Remove the hold of transaction from the variables
+    for (int var_id : transaction_variable_map.keySet()) {
       if (transaction_variable_map.get(var_id).equals(trans_id)) {
-            transaction_variable_map.remove(var_id);
-          }
+        transaction_variable_map.remove(var_id);
+      }
     }
 
-    //Remove the transaction from the current set of transactions
+    // Remove the transaction from the current set of transactions
     transactions.remove(trans_id);
 
-    //Remove dependency edge if any
+    // Remove dependency edge if any
     DeadlockHandler.removeTransactionfromMap(trans_id);
 
   }
