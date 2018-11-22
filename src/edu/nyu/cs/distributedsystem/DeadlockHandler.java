@@ -80,7 +80,8 @@ public class DeadlockHandler {
 	  return false;
 		  
 }
-	  
+	
+  
 
   static List<Integer> getDependentTransactionList(int trans_id) {
     return transaction_dependency_graph.get(trans_id);

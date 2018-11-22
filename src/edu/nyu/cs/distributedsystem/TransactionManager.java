@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+
 public class TransactionManager {
   static Map<Integer, Integer> transaction_variable_map = new HashMap<Integer, Integer>();
   static Map<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
