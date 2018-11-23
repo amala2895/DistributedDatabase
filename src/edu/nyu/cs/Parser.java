@@ -5,14 +5,24 @@ import java.io.FileNotFoundException;
 import java.util.Scanner;
 import edu.nyu.cs.distributedsystem.TransactionManager;
 
+/*
+ * This class parses the input file line by line and calls appropriate functions of the Transaction
+ * manager
+ */
 public class Parser {
-  // Suppress default constructor for noninstantiability
+
   private static String filepath;
 
+  // Suppress default constructor for noninstantiability
   private Parser() {
     throw new AssertionError();
   }
 
+  /**
+   * This method initializes all sites by bringing them up and initializes all variables
+   * 
+   * @param filename
+   */
   public static void initfilename(String filename) {
     filepath = filename;
     TransactionManager.initializeSites();
@@ -20,6 +30,13 @@ public class Parser {
 
   }
 
+
+  /**
+   * This method decides what the given line is and calls the appropriate Transaction manager
+   * function.
+   * 
+   * @param line
+   */
   private static void parse(String line) {
     line = line.replaceAll("\\s+", "");
 
@@ -73,6 +90,12 @@ public class Parser {
     }
   }
 
+  /**
+   * This methods reads the file line by line and calls the parse method
+   * 
+   *
+   * @throws FileNotFoundException
+   */
   public static void readFile() throws FileNotFoundException {
     File file = new File(filepath);
     Scanner sc = new Scanner(file);

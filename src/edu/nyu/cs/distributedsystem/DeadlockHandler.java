@@ -6,14 +6,17 @@ import java.util.List;
 import java.util.Map;
 
 public class DeadlockHandler {
+  // key is dependent
   private static Map<Integer, List<Integer>> transaction_dependency_graph =
       new HashMap<Integer, List<Integer>>();
 
-  
-  static Map<Integer, List<Integer>> getDependencyGraph(){
-	  return transaction_dependency_graph;
+
+  static Map<Integer, List<Integer>> getDependencyGraph() {
+    return transaction_dependency_graph;
   }
+
   static void addDependencyEdge(int independent_trans, int dependent_trans) {
+
     if (transaction_dependency_graph.containsKey(dependent_trans)) {
       List<Integer> value = transaction_dependency_graph.get(dependent_trans);
       value.add(independent_trans);
@@ -31,17 +34,15 @@ public class DeadlockHandler {
     if (transaction_dependency_graph.containsKey(dependent_trans)) {
       List<Integer> value = transaction_dependency_graph.get(dependent_trans);
       value.remove(independent_trans);
-      //transaction_dependency_graph.remove(dependent_trans);
+      // transaction_dependency_graph.remove(dependent_trans);
 
       if (!value.isEmpty())
         transaction_dependency_graph.put(dependent_trans, value);
       else
-    	transaction_dependency_graph.remove(dependent_trans);
+        transaction_dependency_graph.remove(dependent_trans);
     }
   }
 
-
-  
 
 
   static List<Integer> getFreedTransactions(int trans_id) {
@@ -66,22 +67,22 @@ public class DeadlockHandler {
     }
     return false;
   }
-  
-  static boolean isThereACycleInGraph(int T1,int T2) {
-	  
-	  List<Integer> t = transaction_dependency_graph.get(T2);
-	  
-	  for(Integer e:t) {
-		  if(e == T1)
-			  return true;
-		  
-		  return isThereACycleInGraph(T1,e);
-	  } 
-	  return false;
-		  
-}
-	
-  
+
+  static boolean isThereACycleInGraph(int T1, int T2) {
+
+    List<Integer> t = transaction_dependency_graph.get(T2);
+
+    for (Integer e : t) {
+      if (e == T1)
+        return true;
+
+      return isThereACycleInGraph(T1, e);
+    }
+    return false;
+
+  }
+
+
 
   static List<Integer> getDependentTransactionList(int trans_id) {
     return transaction_dependency_graph.get(trans_id);

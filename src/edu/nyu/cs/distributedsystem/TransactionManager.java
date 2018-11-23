@@ -1,21 +1,31 @@
 package edu.nyu.cs.distributedsystem;
 
 import java.time.Instant;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-
 public class TransactionManager {
   static Map<Integer, Integer> transaction_variable_map = new HashMap<Integer, Integer>();
   static Map<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
   static Map<Integer, Site> sites = new HashMap<Integer, Site>();
   static Map<Integer, List<Integer>> variable_site_map = new HashMap<Integer, List<Integer>>();
-  static Map<Transaction, Operation> waitingOperations = new HashMap<Transaction, Operation>();
+  static List<Tuple<Transaction, Operation>> waitingOperations =
+      new ArrayList<Tuple<Transaction, Operation>>();
   static Map<Integer, List<Variable>> variable_copies_map = new HashMap<Integer, List<Variable>>();
+
+
+  private static class Tuple<X, Y> {
+    private final X x;
+    private final Y y;
+
+    private Tuple(X x, Y y) {
+      this.x = x;
+      this.y = y;
+    }
+  }
 
   // Initialize the sites
   public static void initializeSites() {
@@ -54,11 +64,6 @@ public class TransactionManager {
       variable_site_map.put(i, siteList);
       variable_copies_map.put(i, variablecopies);
     }
-  }
-  
-  
-  public static Map<Integer, Transaction> getTransactions(){
-	  return transactions;
   }
 
   // This function creates a transaction
@@ -120,6 +125,10 @@ public class TransactionManager {
         variableList = variable_copies_map.get(var_id);
         // not sure about use of this below statement
         txn.addOperationToTransaction(oper);
+
+        // add to transaction variable-tramsaction map
+        addVariableToMap(trans_id, var_id);
+
         // since we got the lock we can execute it
         // add all the variables of each site to the commit map of transaction
         for (Variable v : variableList) {
@@ -128,37 +137,67 @@ public class TransactionManager {
         }
 
       } else {
-        waitingOperations.put(txn, oper);
-        // add to waiting transaction list
-        // check the dependency between transactions
-        // and check if there is a deadlock;
+        // check if already waiting
+        if (!alreadyWaiting(txn, oper)) {
 
+          Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
+          waitingOperations.add(t);
+        }
+
+
+        // add to waiting transaction list
+        // we need to add edge to the graph
+        // first we check if an edge already exists that is
         // check the dependency between transactions
         // and check if there is a deadlock;
         // find the transaction which has lock on this variables
         // and add the dependency edge.
-        int independent_trans_id = transaction_variable_map.get(var_id);
-        
-        if (DeadlockHandler.ifThereIsAnEdgeFromT1toT2(trans_id, independent_trans_id)) 
-        {
-          // Abort the latest transaction
-          Transaction t1 = transactions.get(trans_id);
-          Transaction t2 = transactions.get(independent_trans_id);
-          
-          List<Integer> freedTrans = new ArrayList<Integer>();
-          
-          if (t1.getStartTime() <= t2.getStartTime()) 
-          {
-            freedTrans = DeadlockHandler.getFreedTransactions(trans_id);
-            releaseResources(trans_id);
-          } else {
-            freedTrans = DeadlockHandler.getFreedTransactions(independent_trans_id);
-            releaseResources(independent_trans_id);
-          }
-        } else
-          DeadlockHandler.addDependencyEdge(independent_trans_id, trans_id);
 
+
+
+        int independent_trans_id = transaction_variable_map.get(var_id);
+
+        checkAndAddDependency(trans_id, independent_trans_id);
       }
+    }
+
+  }
+
+  private static boolean alreadyWaiting(Transaction txn, Operation oper) {
+    for (Tuple<Transaction, Operation> t : waitingOperations) {
+      if (t.x.equals(txn) && t.y.equals(oper))
+        return true;
+    }
+
+    return false;
+  }
+
+  private static void checkAndAddDependency(int trans_id, int independent_trans_id) {
+    // if edge exists we dont need to do anything
+
+    if (!DeadlockHandler.ifThereIsAnEdgeFromT1toT2(trans_id, independent_trans_id)) {
+      // check if there is a deadlock
+      if (DeadlockHandler.isThereACycleInGraph(trans_id, independent_trans_id)) {
+        // deadlock found
+        // Abort the latest transaction
+        Transaction t1 = transactions.get(trans_id);
+        Transaction t2 = transactions.get(independent_trans_id);
+        List<Integer> freedTrans = new ArrayList<Integer>();
+        if (t1.getStartTime() <= t2.getStartTime()) {
+          freedTrans = DeadlockHandler.getFreedTransactions(trans_id);
+          releaseResources(trans_id);
+        } else {
+          freedTrans = DeadlockHandler.getFreedTransactions(independent_trans_id);
+          releaseResources(independent_trans_id);
+        }
+      }
+
+      else {
+        // no deadlock hence we can add the egde
+        DeadlockHandler.addDependencyEdge(independent_trans_id, trans_id);
+      }
+
+
     }
 
   }
@@ -167,17 +206,13 @@ public class TransactionManager {
   public static void makeReadOperation(int trans_id, int var_id) {
     Transaction txn = null;
     Operation oper = new Operation(trans_id, var_id);
-    
     if (transactions.containsKey(trans_id))
       txn = transactions.get(trans_id);
-    
-    if (txn != null) 
-    {
-      if (txn.getType() == TransactionType.RW) 
-      {
+    if (txn != null) {
+      if (txn.getType() == TransactionType.RW) {
         txn.addOperationToTransaction(oper);
 
-        // first we need to check if transaction already changed its value
+        // first we need to check if own transaction already changed its value
 
 
         if (txn.checkInCommitMap(var_id)) {
@@ -193,39 +228,21 @@ public class TransactionManager {
 
           } else {
             // wait
-            waitingOperations.put(txn, oper);
+            if (!alreadyWaiting(txn, oper)) {
+              Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
+              waitingOperations.add(t);
+            }
+            // check the dependency between transactions
+            // and check if there is a deadlock;
+            int independent_trans_id = transaction_variable_map.get(var_id);
+            checkAndAddDependency(trans_id, independent_trans_id);
           }
         }
       } else {
 
-        // check the dependency between transactions
-        // and check if there is a deadlock;
 
 
-        int independent_trans_id = transaction_variable_map.get(var_id);
-        if (DeadlockHandler.ifThereIsAnEdgeFromT1toT2(trans_id, independent_trans_id)) {
-          // Abort the latest transaction
-          Transaction t1 = transactions.get(trans_id);
-          Transaction t2 = transactions.get(independent_trans_id);
-
-          List<Integer> freedTrans = new ArrayList<Integer>();
-
-          if (t1.getStartTime() <= t2.getStartTime()) {
-            freedTrans = DeadlockHandler.getFreedTransactions(independent_trans_id);
-            releaseResources(independent_trans_id);
-          } else {
-            freedTrans = DeadlockHandler.getFreedTransactions(trans_id);
-            releaseResources(trans_id);
-          }
-
-          if (!freedTrans.isEmpty()) {
-            // TO DO.. resume waiting transactions. How
-            // do we know if its write opeartion or read
-            // operation.
-          } else
-            DeadlockHandler.addDependencyEdge(independent_trans_id, trans_id);
-
-        }
+        // read only transaction case
 
       }
     }
@@ -270,9 +287,20 @@ public class TransactionManager {
   // This function ends a transaction by calling unlockVariables function
   public static void endTransaction(int trans_id) {
 
-    commitTransaction(trans_id);
+    if (commitTransaction(trans_id)) {
+      // after committing we need to check which other transactions are waiting
+      clearWaitingOperations();
+    }
   }
 
+  private static void clearWaitingOperations() {
+    for (Tuple<Transaction, Operation> t : waitingOperations) {
+      // get transaction id
+      // check if read or write operation
+
+    }
+
+  }
 
   // This function commits a transaction
   private static boolean commitTransaction(int trans_id) {
@@ -363,7 +391,7 @@ public class TransactionManager {
 
   }
 
-  // This function puts a lock on the variable being read by some transaction
+  // This function puts a lock on the variable being written by some transaction
   private static void writelockVariable(int var_id) {
 
     List<Integer> s = variable_site_map.get(var_id);
@@ -409,53 +437,8 @@ public class TransactionManager {
     transactions.remove(trans_id);
 
     // Remove dependency edge if any
-    removeTransactionfromMap(trans_id);
+    // DeadlockHandler.removeTransactionfromMap(trans_id);
 
   }
 
-
-//Remove transaction from the map and return the list of oldest transaction_ids // waiting for
-// that transaction to // commit/ abort so that it can continue List<Integer>
-static void removeTransactionfromMap(int trans_id) {
-	
-	int i=0;
-	
-	Map<Integer, List<Integer>> graph = DeadlockHandler.getDependencyGraph();
-	List<Integer> freeTransactions = new ArrayList<Integer>();
-	
-	for(Integer k:graph.keySet()) {
-		
-		List<Integer> l=graph.get(k);
-		
-		for(Integer e:l) 
-		{
-			if(e == trans_id) 
-			{
-				l.remove(e);
-				
-				if(l.isEmpty())
-					freeTransactions.add(k);
-				
-				else 
-				{
-					graph.remove(k);
-					graph.put(k,l);
-				}
-			}
-		}
-		
-	}
- /*
-  if (DeadlockHandler.getDependencyGraph().containsKey(trans_id))
-	  DeadlockHandler.getDependencyGraph().remove(trans_id);
-   
-  for (Integer t : transaction_variable_map.keySet()) { 
-	  if(transaction_variable_map.get(t).contains(trans_id)) { 
-		  List<Integer> value =
-  transaction_variable_map.get(t); value.remove(trans_id); if (value.isEmpty())
-  transaction_variable_map.remove(t); } } return freedTransactions;
-  
-  */
- //return true;
- }
 }
