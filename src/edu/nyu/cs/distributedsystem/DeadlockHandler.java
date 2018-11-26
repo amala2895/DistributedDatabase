@@ -30,16 +30,27 @@ public class DeadlockHandler {
   }
 
 
-  static void removeDependencyEdge(int independent_trans, int dependent_trans) {
-    if (transaction_dependency_graph.containsKey(dependent_trans)) {
-      List<Integer> value = transaction_dependency_graph.get(dependent_trans);
-      value.remove(independent_trans);
-      // transaction_dependency_graph.remove(dependent_trans);
-
-      if (!value.isEmpty())
-        transaction_dependency_graph.put(dependent_trans, value);
-      else
-        transaction_dependency_graph.remove(dependent_trans);
+  static void removeDependencyEdge(int dependent_trans) {
+	  
+	//Remove the edge which contains dependent_trans as key
+    if (transaction_dependency_graph.containsKey(dependent_trans)) 
+    	transaction_dependency_graph.remove(dependent_trans);
+    
+    
+    //Remove the edge which contains dependent_trans as value
+    
+     for(Integer key: transaction_dependency_graph.keySet()) 
+     {
+    	 List<Integer> value = transaction_dependency_graph.get(key);
+    	 for(Integer val: value ) 
+    	 {
+    		 if(val == dependent_trans) 
+    		 {
+    			 value.remove(val);
+    	    }
+    		 transaction_dependency_graph.put(key,value);
+        }
+      
     }
   }
 
