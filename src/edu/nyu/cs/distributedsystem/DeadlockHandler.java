@@ -2,6 +2,7 @@ package edu.nyu.cs.distributedsystem;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -31,26 +32,37 @@ public class DeadlockHandler {
 
 
   static void removeDependencyEdge(int dependent_trans) {
-	  
-	//Remove the edge which contains dependent_trans as key
-    if (transaction_dependency_graph.containsKey(dependent_trans)) 
-    	transaction_dependency_graph.remove(dependent_trans);
-    
-    
-    //Remove the edge which contains dependent_trans as value
-    
-     for(Integer key: transaction_dependency_graph.keySet()) 
-     {
-    	 List<Integer> value = transaction_dependency_graph.get(key);
-    	 for(Integer val: value ) 
-    	 {
-    		 if(val == dependent_trans) 
-    		 {
-    			 value.remove(val);
-    	    }
-    		 transaction_dependency_graph.put(key,value);
+    System.out.println("Removing dependency edge " + dependent_trans);
+    // Remove the edge which contains dependent_trans as key
+    if (transaction_dependency_graph.containsKey(dependent_trans))
+      transaction_dependency_graph.remove(dependent_trans);
+
+
+    // Remove the edge which contains dependent_trans as value
+
+    for (Integer key : transaction_dependency_graph.keySet()) {
+      List<Integer> value = transaction_dependency_graph.get(key);
+
+      if (value.isEmpty()) {
+
+
+        continue;
+      }
+      Iterator<Integer> itr = value.iterator();
+      while (itr.hasNext()) {
+        int val = itr.next();
+        if (val == dependent_trans) {
+
+          itr.remove();
         }
-      
+        if (value.isEmpty()) {
+
+          transaction_dependency_graph.remove(key);
+        } else {
+          transaction_dependency_graph.put(key, value);
+        }
+      }
+
     }
   }
 
@@ -80,19 +92,17 @@ public class DeadlockHandler {
   }
 
   static boolean isThereACycleInGraph(int T1, int T2) {
-	  
-	  
-    if(transaction_dependency_graph.containsKey(T2)) 
-    {
-    	List<Integer> t = transaction_dependency_graph.get(T2);
 
-    	for (Integer e : t) 
-    	{
-    		if (e == T1)
-    			return true;
 
-      		return isThereACycleInGraph(T1, e);
-        }
+    if (transaction_dependency_graph.containsKey(T2)) {
+      List<Integer> t = transaction_dependency_graph.get(T2);
+
+      for (Integer e : t) {
+        if (e == T1)
+          return true;
+
+        return isThereACycleInGraph(T1, e);
+      }
     }
     return false;
 
