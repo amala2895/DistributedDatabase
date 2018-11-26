@@ -35,4 +35,12 @@ class Operation {
     return is_write_operation;
   }
 
+  int getvarid() {
+    return this.variable_id;
+  }
+
+  int getValue() {
+    return this.variable_value;
+  }
+
 }

@@ -35,6 +35,10 @@ class Transaction {
     return this.txn_start_time;
   }
 
+  int getId() {
+    return this.txn_id;
+  }
+
   void addOperationToTransaction(Operation oper) {
     txn_operations.add(oper);
   }

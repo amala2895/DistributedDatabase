@@ -83,24 +83,49 @@ public class TransactionManager {
     Transaction txn = null;
 
     Operation oper = new Operation(trans_id, var_id, var_value);
-    List<Variable> variableList = null;
+
 
 
     if (transactions.containsKey(trans_id))
       txn = transactions.get(trans_id);
 
     if (txn != null) {
-      if (!isVariableLocked(var_id)) {
-        // Along side locking the variable, check if the variable is justRecovered
-        // If so, set the justRecovered flag of the variable to false for the site
-        // which is recovering. (Not for the DOWN or UP site)
-        // TO DO .. check for all the sites where this variable resides
-        // If the site status is RECOVERING, set the justRecovered flag to false
-        // for that copy of the variable.
-        writelockVariable(var_id);
+      writeOperation(txn, oper);
+    } else {
+      // aborted
+      System.out.println("Aborted :" + trans_id);
+    }
 
-        if (var_id % 2 == 0) {
-          for (int j = 1; j <= 10; j++) {
+  }
+
+  private static void writeOperation(Transaction txn, Operation oper) {
+
+    int var_id = oper.getvarid();
+    int trans_id = txn.getId();
+    List<Variable> variableList = null;
+    if (!isVariableLocked(var_id)) {
+      // Along side locking the variable, check if the variable is justRecovered
+      // If so, set the justRecovered flag of the variable to false for the site
+      // which is recovering. (Not for the DOWN or UP site)
+      // TO DO .. check for all the sites where this variable resides
+      // If the site status is RECOVERING, set the justRecovered flag to false
+      // for that copy of the variable.
+      writelockVariable(var_id);
+
+      if (var_id % 2 == 0) {
+        for (int j = 1; j <= 10; j++) {
+          if (sites.get(j).getVariable(var_id).isJustRecovered())
+            sites.get(j).getVariable(var_id).setJustRecovered(false);
+
+
+          // TO DO ..check all the variable on the site
+          // If justRecovered is set to false for each and site was recovering
+          // set it to UP.
+
+        }
+      } else {
+        for (int j = 1; j <= 10; j++) {
+          if (j == 1 + var_id % 10) {
             if (sites.get(j).getVariable(var_id).isJustRecovered())
               sites.get(j).getVariable(var_id).setJustRecovered(false);
 
@@ -108,66 +133,53 @@ public class TransactionManager {
             // TO DO ..check all the variable on the site
             // If justRecovered is set to false for each and site was recovering
             // set it to UP.
-
           }
-        } else {
-          for (int j = 1; j <= 10; j++) {
-            if (j == 1 + var_id % 10) {
-              if (sites.get(j).getVariable(var_id).isJustRecovered())
-                sites.get(j).getVariable(var_id).setJustRecovered(false);
-
-
-              // TO DO ..check all the variable on the site
-              // If justRecovered is set to false for each and site was recovering
-              // set it to UP.
-            }
-          }
-        }
-        // getting all variable copies
-        variableList = variable_copies_map.get(var_id);
-        // not sure about use of this below statement
-        txn.addOperationToTransaction(oper);
-
-        // add to transaction variable-transaction map
-        addVariableToMap(trans_id, var_id);
-
-        // since we got the lock we can execute it
-        // add all the variables of each site to the commit map of transaction
-        for (Variable v : variableList) {
-
-          txn.addOperationToCommitMap(v, var_value);
-        }
-
-      } else {
-        // check if already waiting
-        // if (!alreadyWaiting(txn, oper)) {
-
-
-        // }
-
-
-        // add to waiting transaction list
-        // we need to add edge to the graph
-        // first we check if an edge already exists that is
-        // check the dependency between transactions
-        // and check if there is a deadlock;
-        // find the transaction which has lock on this variables
-        // and add the dependency edge.
-
-
-
-        int independent_trans_id = transaction_variable_map.get(var_id);
-
-        if (!checkAndAddDependency(trans_id, independent_trans_id)) {
-          Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
-          waitingOperations.add(t);
         }
       }
-    } else {
-      // aborted
-      System.out.println("Aborted :" + trans_id);
-    }
+      // getting all variable copies
+      variableList = variable_copies_map.get(var_id);
+      // not sure about use of this below statement
+      txn.addOperationToTransaction(oper);
 
+      // add to transaction variable-transaction map
+      addVariableToMap(trans_id, var_id);
+
+      // since we got the lock we can execute it
+      // add all the variables of each site to the commit map of transaction
+      for (Variable v : variableList) {
+
+        txn.addOperationToCommitMap(v, oper.getValue());
+      }
+
+    } else {
+      // check if already waiting
+      // if (!alreadyWaiting(txn, oper)) {
+
+
+      // }
+
+
+      // add to waiting transaction list
+      // we need to add edge to the graph
+      // first we check if an edge already exists that is
+      // check the dependency between transactions
+      // and check if there is a deadlock;
+      // find the transaction which has lock on this variables
+      // and add the dependency edge.
+
+
+
+      int independent_trans_id = transaction_variable_map.get(var_id);
+
+      if (!checkAndAddDependency(trans_id, independent_trans_id)) {
+        if (!alreadyWaiting(txn, oper)) {
+          Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
+          waitingOperations.add(t);
+
+        }
+
+      }
+    }
   }
 
   //
@@ -201,6 +213,7 @@ public class TransactionManager {
           releaseResources(independent_trans_id);
         }
         System.out.println("Aborted :" + trans_id);
+        clearWaitingOperations();
         return false;
       }
 
@@ -221,53 +234,68 @@ public class TransactionManager {
     if (transactions.containsKey(trans_id))
       txn = transactions.get(trans_id);
     if (txn != null) {
-      if (txn.getType() == TransactionType.RW) {
-        txn.addOperationToTransaction(oper);
-
-        // first we need to check if own transaction already changed its value
-
-
-        if (txn.checkInCommitMap(var_id)) {
-          // reading value from commit map in transaction class
-
-        } else {
-          if (!isVariableWriteLocked(var_id)) {
-
-            readlockVariable(var_id);
-
-            for (Variable v : variable_copies_map.get(var_id)) {
-
-              txn.addOperationToReadMap(v);
-            }
-
-            // we have the lock so we can read it
-            Variable v = variable_copies_map.get(var_id).get(0);
-            txn.readOperation(v);
-
-          } else {
-            // wait
-            if (!alreadyWaiting(txn, oper)) {
-              Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
-              waitingOperations.add(t);
-            }
-            // check the dependency between transactions
-            // and check if there is a deadlock;
-            int independent_trans_id = transaction_variable_map.get(var_id);
-            checkAndAddDependency(trans_id, independent_trans_id);
-          }
-        }
-      } else {
-
-
-
-        // read only transaction case
-
-      }
+      readOperation(txn, oper);
     } else {
       // aborted
       System.out.println("Aborted :" + trans_id);
     }
 
+  }
+
+  private static void readOperation(Transaction txn, Operation oper) {
+    int var_id = oper.getvarid();
+    int trans_id = txn.getId();
+    if (txn.getType() == TransactionType.RW) {
+      txn.addOperationToTransaction(oper);
+
+      // first we need to check if own transaction already changed its value
+
+
+      if (txn.checkInCommitMap(var_id)) {
+        // reading value from commit map in transaction class
+
+      } else {
+        if (!isVariableWriteLocked(var_id)) {
+
+          readlockVariable(var_id);
+
+          for (Variable v : variable_copies_map.get(var_id)) {
+
+            txn.addOperationToReadMap(v);
+          }
+
+          // we have the lock so we can read it
+          Variable v = variable_copies_map.get(var_id).get(0);
+          txn.readOperation(v);
+
+        } else {
+          // wait
+          /*
+           * // if (!alreadyWaiting(txn, oper)) { Tuple<Transaction, Operation> t = new
+           * Tuple<Transaction, Operation>(txn, oper); waitingOperations.add(t); // } // check the
+           * dependency between transactions // and check if there is a deadlock; int
+           * independent_trans_id = transaction_variable_map.get(var_id);
+           * checkAndAddDependency(trans_id, independent_trans_id);
+           */
+
+          int independent_trans_id = transaction_variable_map.get(var_id);
+
+          if (!checkAndAddDependency(trans_id, independent_trans_id)) {
+            if (!alreadyWaiting(txn, oper)) {
+              Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
+              waitingOperations.add(t);
+
+            }
+          }
+        }
+      }
+    } else {
+
+
+
+      // read only transaction case
+
+    }
   }
 
   // This function will make a site down
@@ -307,10 +335,14 @@ public class TransactionManager {
 
   // This function ends a transaction by calling unlockVariables function
   public static void endTransaction(int trans_id) {
+    if (transactions.containsKey(trans_id)) {
+      if (commitTransaction(trans_id)) {
+        // after committing we need to check which other transactions are waiting
+        clearWaitingOperations();
+      }
 
-    if (commitTransaction(trans_id)) {
-      // after committing we need to check which other transactions are waiting
-      clearWaitingOperations();
+    } else {
+      System.out.println("Aborted Transaction T" + trans_id);
     }
   }
 
