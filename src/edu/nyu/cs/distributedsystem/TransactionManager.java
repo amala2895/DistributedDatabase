@@ -31,6 +31,8 @@ public class TransactionManager {
 
   // Initialize the sites
   public static void initializeSites() {
+	
+	System.out.println("initializeSites()");
     Site site = null;
     for (int i = 1; i <= 10; i++) {
       site = new Site(i);
@@ -42,7 +44,8 @@ public class TransactionManager {
   public static void initializeVariables() {
 
     for (int i = 1; i <= 20; i++) {
-
+    	
+      System.out.println("initializeVariables()");
       List<Variable> variablecopies = new LinkedList<Variable>();
       List<Integer> siteList = new LinkedList<Integer>();
       Variable var = null;
@@ -71,6 +74,7 @@ public class TransactionManager {
   // This function creates a transaction
   public static void beginTransaction(int trans_id, String trans_type) {
 
+	System.out.println("beginTransaction");
     long currTime = Instant.now().getEpochSecond();
     Transaction txn = new Transaction(trans_id, currTime, trans_type);
     transactions.put(trans_id, txn);
@@ -80,6 +84,8 @@ public class TransactionManager {
   // This function will create the write operation and add it to the transaction
   public static void makeWriteOperation(int trans_id, int var_id, int var_value) {
 
+	System.out.println("makeWriteOperation");
+	
     Transaction txn = null;
 
     Operation oper = new Operation(trans_id, var_id, var_value);
@@ -99,7 +105,9 @@ public class TransactionManager {
   }
 
   private static void writeOperation(Transaction txn, Operation oper) {
-
+	  
+	  
+	System.out.println("writeOperation:: Trans_id = "+ txn.getId()+ "Var id = "+ oper.getvarid() );
     int var_id = oper.getvarid();
     int trans_id = txn.getId();
     List<Variable> variableList = null;
@@ -110,18 +118,25 @@ public class TransactionManager {
       // TO DO .. check for all the sites where this variable resides
       // If the site status is RECOVERING, set the justRecovered flag to false
       // for that copy of the variable.
+    	
+      System.out.println("writeOperation::Variable not locked");
       writelockVariable(var_id);
 
       if (var_id % 2 == 0) {
         for (int j = 1; j <= 10; j++) {
-          if (sites.get(j).getVariable(var_id).isJustRecovered())
-            sites.get(j).getVariable(var_id).setJustRecovered(false);
+        	
+          //Check for the site availability before making any operation
+         // if(sites.get(j).getSiteStatus() != SiteStatus.DOWN) 
+          //{
+        	  if (sites.get(j).getVariable(var_id).isJustRecovered())
+        		  sites.get(j).getVariable(var_id).setJustRecovered(false);
 
 
           // TO DO ..check all the variable on the site
           // If justRecovered is set to false for each and site was recovering
           // set it to UP.
 
+         // }
         }
       } else {
         for (int j = 1; j <= 10; j++) {
@@ -168,11 +183,14 @@ public class TransactionManager {
       // and add the dependency edge.
 
 
-
+      System.out.println("writeOperation::Variable is locked");
       int independent_trans_id = transaction_variable_map.get(var_id);
 
       if (!checkAndAddDependency(trans_id, independent_trans_id)) {
+    	System.out.println("writeOperation::checkAndAddDependency returned false");
+    	System.out.println(" Dependent Transaction id = "+ trans_id+ " Independent trans id = "+ independent_trans_id);
         if (!alreadyWaiting(txn, oper)) {
+        	System.out.println("writeOperation:: Not already waiting");
           Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
           waitingOperations.add(t);
 
@@ -184,6 +202,7 @@ public class TransactionManager {
 
   //
   private static boolean alreadyWaiting(Transaction txn, Operation oper) {
+	  
     for (Tuple<Transaction, Operation> t : waitingOperations) {
       if (t.x.equals(txn) && t.y.equals(oper))
         return true;
@@ -193,11 +212,17 @@ public class TransactionManager {
   }
 
   private static boolean checkAndAddDependency(int trans_id, int independent_trans_id) {
-    // if edge exists we dont need to do anything
-
+    
+	System.out.println("checkAndAddDependency" + trans_id + "  " + independent_trans_id );
+	
+	// if edge exists we don't need to do anything
     if (!DeadlockHandler.ifThereIsAnEdgeFromT1toT2(trans_id, independent_trans_id)) {
-      // check if there is a deadlock
+    	
+       System.out.println("checkAndAddDependency::Edge not present");
+      // check if there is a deadlock	
       if (DeadlockHandler.isThereACycleInGraph(trans_id, independent_trans_id)) {
+    	  
+    	System.out.println("checkAndAddDependency:: Cycle in graph. DEADLOCK!!!");
         // deadlock found
         // Abort the latest transaction
         Transaction t1 = transactions.get(trans_id);
@@ -218,7 +243,9 @@ public class TransactionManager {
       }
 
       else {
-        // no deadlock hence we can add the egde
+    	 
+        System.out.println("checkAndAddDependency::Add dependency edge");
+        // no deadlock hence we can add the edge
         DeadlockHandler.addDependencyEdge(independent_trans_id, trans_id);
       }
 
@@ -229,6 +256,8 @@ public class TransactionManager {
 
   // This function will create the read operation and add it to the transaction
   public static void makeReadOperation(int trans_id, int var_id) {
+	  
+	System.out.println("makeReadOperation");
     Transaction txn = null;
     Operation oper = new Operation(trans_id, var_id);
     if (transactions.containsKey(trans_id))
@@ -243,6 +272,8 @@ public class TransactionManager {
   }
 
   private static void readOperation(Transaction txn, Operation oper) {
+	  
+	System.out.println("readOperation");
     int var_id = oper.getvarid();
     int trans_id = txn.getId();
     if (txn.getType() == TransactionType.RW) {
