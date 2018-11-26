@@ -12,8 +12,10 @@ public class TransactionManager {
   static Map<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
   static Map<Integer, Site> sites = new HashMap<Integer, Site>();
   static Map<Integer, List<Integer>> variable_site_map = new HashMap<Integer, List<Integer>>();
+
   static List<Tuple<Transaction, Operation>> waitingOperations =
       new ArrayList<Tuple<Transaction, Operation>>();
+
   static Map<Integer, List<Variable>> variable_copies_map = new HashMap<Integer, List<Variable>>();
 
 
@@ -126,7 +128,7 @@ public class TransactionManager {
         // not sure about use of this below statement
         txn.addOperationToTransaction(oper);
 
-        // add to transaction variable-tramsaction map
+        // add to transaction variable-transaction map
         addVariableToMap(trans_id, var_id);
 
         // since we got the lock we can execute it
@@ -138,11 +140,10 @@ public class TransactionManager {
 
       } else {
         // check if already waiting
-        if (!alreadyWaiting(txn, oper)) {
+        // if (!alreadyWaiting(txn, oper)) {
 
-          Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
-          waitingOperations.add(t);
-        }
+
+        // }
 
 
         // add to waiting transaction list
@@ -157,12 +158,19 @@ public class TransactionManager {
 
         int independent_trans_id = transaction_variable_map.get(var_id);
 
-        checkAndAddDependency(trans_id, independent_trans_id);
+        if (!checkAndAddDependency(trans_id, independent_trans_id)) {
+          Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
+          waitingOperations.add(t);
+        }
       }
+    } else {
+      // aborted
+      System.out.println("Aborted :" + trans_id);
     }
 
   }
 
+  //
   private static boolean alreadyWaiting(Transaction txn, Operation oper) {
     for (Tuple<Transaction, Operation> t : waitingOperations) {
       if (t.x.equals(txn) && t.y.equals(oper))
@@ -172,7 +180,7 @@ public class TransactionManager {
     return false;
   }
 
-  private static void checkAndAddDependency(int trans_id, int independent_trans_id) {
+  private static boolean checkAndAddDependency(int trans_id, int independent_trans_id) {
     // if edge exists we dont need to do anything
 
     if (!DeadlockHandler.ifThereIsAnEdgeFromT1toT2(trans_id, independent_trans_id)) {
@@ -182,14 +190,18 @@ public class TransactionManager {
         // Abort the latest transaction
         Transaction t1 = transactions.get(trans_id);
         Transaction t2 = transactions.get(independent_trans_id);
-        List<Integer> freedTrans = new ArrayList<Integer>();
+        // List<Integer> freedTrans = new ArrayList<Integer>();
+
         if (t1.getStartTime() <= t2.getStartTime()) {
-          freedTrans = DeadlockHandler.getFreedTransactions(trans_id);
+
+          // freedTrans = DeadlockHandler.getFreedTransactions(trans_id);
           releaseResources(trans_id);
         } else {
-          freedTrans = DeadlockHandler.getFreedTransactions(independent_trans_id);
+          // freedTrans = DeadlockHandler.getFreedTransactions(independent_trans_id);
           releaseResources(independent_trans_id);
         }
+        System.out.println("Aborted :" + trans_id);
+        return false;
       }
 
       else {
@@ -199,7 +211,7 @@ public class TransactionManager {
 
 
     }
-
+    return true;
   }
 
   // This function will create the read operation and add it to the transaction
@@ -216,14 +228,20 @@ public class TransactionManager {
 
 
         if (txn.checkInCommitMap(var_id)) {
-
+          // reading value from commit map in transaction class
 
         } else {
           if (!isVariableWriteLocked(var_id)) {
 
-            Variable v = readlockVariable(var_id);
-            txn.addOperationToReadMap(v);
+            readlockVariable(var_id);
+
+            for (Variable v : variable_copies_map.get(var_id)) {
+
+              txn.addOperationToReadMap(v);
+            }
+
             // we have the lock so we can read it
+            Variable v = variable_copies_map.get(var_id).get(0);
             txn.readOperation(v);
 
           } else {
@@ -245,6 +263,9 @@ public class TransactionManager {
         // read only transaction case
 
       }
+    } else {
+      // aborted
+      System.out.println("Aborted :" + trans_id);
     }
 
   }
@@ -372,9 +393,9 @@ public class TransactionManager {
 
   // This function puts a lock on the variable being read by some transaction returns the variable
   // on one site
-  private static Variable readlockVariable(int var_id) {
+  private static void readlockVariable(int var_id) {
     List<Integer> s = variable_site_map.get(var_id);
-    Variable v = null;
+
     for (Integer i : s) {
       // check if site is up
       if (sites.get(i).getSiteStatus() == SiteStatus.UP) {
@@ -382,12 +403,12 @@ public class TransactionManager {
 
         sites.get(i).getVariable(var_id).readLockVariable();
         // need to lock only on one site
-        v = sites.get(i).getVariable(var_id);
-        break;
+
+
 
       }
     }
-    return v;
+
 
   }
 
@@ -411,9 +432,7 @@ public class TransactionManager {
   // This function will be called when there is a write operation by any transaction
   private static boolean addVariableToMap(int trans_id, int var_id) {
 
-    /*
-     * Before adding to the map check if any other transaction has lock on the variable
-     */
+
     if (transaction_variable_map.containsKey(var_id))
       return false; // Some transaction has already lock on the variable
 
@@ -430,14 +449,30 @@ public class TransactionManager {
     for (int var_id : transaction_variable_map.keySet()) {
       if (transaction_variable_map.get(var_id).equals(trans_id)) {
         transaction_variable_map.remove(var_id);
+        List<Variable> variables = variable_copies_map.get(var_id);
+        for (Variable v : variables) {
+          v.unlockVariable();
+        }
       }
+
+
     }
 
+    // remove from waiting operations
+    Transaction txn = transactions.get(trans_id);
+    for (Tuple<Transaction, Operation> t : waitingOperations) {
+      if (t.x.equals(txn)) {
+        waitingOperations.remove(t);
+
+
+
+      }
+    }
     // Remove the transaction from the current set of transactions
     transactions.remove(trans_id);
 
     // Remove dependency edge if any
-    // DeadlockHandler.removeTransactionfromMap(trans_id);
+    DeadlockHandler.removeDependencyEdge(trans_id);
 
   }
 
