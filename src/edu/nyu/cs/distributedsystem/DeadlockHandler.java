@@ -80,14 +80,19 @@ public class DeadlockHandler {
   }
 
   static boolean isThereACycleInGraph(int T1, int T2) {
+	  
+	  
+    if(transaction_dependency_graph.containsKey(T2)) 
+    {
+    	List<Integer> t = transaction_dependency_graph.get(T2);
 
-    List<Integer> t = transaction_dependency_graph.get(T2);
+    	for (Integer e : t) 
+    	{
+    		if (e == T1)
+    			return true;
 
-    for (Integer e : t) {
-      if (e == T1)
-        return true;
-
-      return isThereACycleInGraph(T1, e);
+      		return isThereACycleInGraph(T1, e);
+        }
     }
     return false;
 
