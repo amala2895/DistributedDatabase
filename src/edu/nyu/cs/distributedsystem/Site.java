@@ -45,6 +45,10 @@ class Site {
   int getVariableValue(int i) {
     return indexVariable.get(i).getVal();
   }
+  
+  Map<Integer, Variable> getIndexVariable() {
+	  return indexVariable;
+  }
 
   void printVariables() {
     for (int i = 1; i <= 20; i++) {

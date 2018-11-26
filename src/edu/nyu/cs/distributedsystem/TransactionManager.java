@@ -346,6 +346,14 @@ public class TransactionManager {
   public static void failSite(int site_id) {
 
     sites.get(site_id).setSiteStatus(SiteStatus.DOWN);
+    Map<Integer, Variable> variables = sites.get(site_id).getIndexVariable();
+    
+    for(Integer var: variables.keySet()) 
+    {
+    	variables.get(var).unlockVariable();
+    	releaseResources(transaction_variable_map.get(var));
+    }
+       
   }
 
   // This function will recover a site from failure
