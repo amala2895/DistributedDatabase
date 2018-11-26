@@ -30,7 +30,7 @@ class Site {
   }
 
   void addVariable(int i, int val) {
-    Variable newVariable = new Variable(i, val);
+    Variable newVariable = new Variable(i, val, siteNumber);
     indexVariable.put(i, newVariable);
   }
 

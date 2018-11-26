@@ -4,13 +4,15 @@ class Variable {
 
   private int index;
   private int val;
+  private int siteindex;
   private boolean writelock;
   private boolean readLock;
   private boolean justRecovered;
 
-  Variable(int i, int v) {
+  Variable(int i, int v, int s) {
     index = i;
     val = v;
+    siteindex = s;
     writelock = false;
     readLock = false;
     justRecovered = false;
@@ -19,6 +21,10 @@ class Variable {
 
   int getIndex() {
     return index;
+  }
+
+  int getSiteIndex() {
+    return siteindex;
   }
 
   int getVal() {

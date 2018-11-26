@@ -90,8 +90,12 @@ class Transaction {
     // commiting and unlocking variables that had WRITE operation
     for (Entry<Variable, Integer> e : commitmap.entrySet()) {
       Variable v = e.getKey();
-      v.setVal(e.getValue());
-      v.unlockVariable();
+      Site s = TransactionManager.sites.get(v.getSiteIndex());
+      if (s.getSiteStatus() != SiteStatus.DOWN) {
+        v.setVal(e.getValue());
+        v.unlockVariable();
+      }
+
 
     }
     // unlocking variables that had READ operation

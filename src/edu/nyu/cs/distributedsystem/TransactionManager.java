@@ -122,7 +122,8 @@ public class TransactionManager {
       // for that copy of the variable.
 
       System.out.println("writeOperation::Variable not locked");
-      writelockVariable(var_id);
+      // getting all variable copies
+      variableList = writelockVariable(var_id);
 
       if (var_id % 2 == 0) {
         for (int j = 1; j <= 10; j++) {
@@ -153,8 +154,7 @@ public class TransactionManager {
           }
         }
       }
-      // getting all variable copies
-      variableList = variable_copies_map.get(var_id);
+
       // not sure about use of this below statement
       txn.addOperationToTransaction(oper);
 
@@ -301,15 +301,15 @@ public class TransactionManager {
       } else {
         if (!isVariableWriteLocked(var_id)) {
 
-          readlockVariable(var_id);
+          List<Variable> variablelist = readlockVariable(var_id);
 
-          for (Variable v : variable_copies_map.get(var_id)) {
+          for (Variable v : variablelist) {
 
             txn.addOperationToReadMap(v);
           }
 
           // we have the lock so we can read it
-          Variable v = variable_copies_map.get(var_id).get(0);
+          Variable v = variablelist.get(0);
           txn.readOperation(v);
 
         } else {
@@ -483,15 +483,16 @@ public class TransactionManager {
 
   // This function puts a lock on the variable being read by some transaction returns the variable
   // on one site
-  private static void readlockVariable(int var_id) {
+  private static List<Variable> readlockVariable(int var_id) {
     List<Integer> s = variable_site_map.get(var_id);
-
+    List<Variable> variablelist = new ArrayList<Variable>();
     for (Integer i : s) {
       // check if site is up
       if (sites.get(i).getSiteStatus() == SiteStatus.UP) {
         // check if variable is locked
-
-        sites.get(i).getVariable(var_id).readLockVariable();
+        Variable v = sites.get(i).getVariable(var_id);
+        v.readLockVariable();
+        variablelist.add(v);
         // need to lock only on one site
 
 
@@ -499,22 +500,25 @@ public class TransactionManager {
       }
     }
 
-
+    return variablelist;
   }
 
   // This function puts a lock on the variable being written by some transaction
-  private static void writelockVariable(int var_id) {
-
+  private static List<Variable> writelockVariable(int var_id) {
+    List<Variable> variablelist = new ArrayList<Variable>();
     List<Integer> s = variable_site_map.get(var_id);
     for (Integer i : s) {
       // check if site is up
-      if (sites.get(i).getSiteStatus() == SiteStatus.UP) {
-        // check if variable is locked
-
-        sites.get(i).getVariable(var_id).writeLockVariable();
+      if (sites.get(i).getSiteStatus() == SiteStatus.UP
+          || sites.get(i).getSiteStatus() == SiteStatus.RECOVERING) {
+        // lock variable
+        Variable v = sites.get(i).getVariable(var_id);
+        v.writeLockVariable();
+        variablelist.add(v);
 
       }
     }
+    return variablelist;
   }
 
 
