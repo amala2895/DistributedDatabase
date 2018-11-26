@@ -215,10 +215,8 @@ public class TransactionManager {
     
 	System.out.println("checkAndAddDependency" + trans_id + "  " + independent_trans_id );
 	
-	// if edge exists we don't need to do anything
-    if (!DeadlockHandler.ifThereIsAnEdgeFromT1toT2(trans_id, independent_trans_id)) {
-    	
-       System.out.println("checkAndAddDependency::Edge not present");
+	
+    
       // check if there is a deadlock	
       if (DeadlockHandler.isThereACycleInGraph(trans_id, independent_trans_id)) {
     	  
@@ -243,14 +241,17 @@ public class TransactionManager {
       }
 
       else {
-    	 
-        System.out.println("checkAndAddDependency::Add dependency edge");
-        // no deadlock hence we can add the edge
-        DeadlockHandler.addDependencyEdge(independent_trans_id, trans_id);
+    	  
+    	// if edge exists we don't need to do anything
+    	if (!DeadlockHandler.ifThereIsAnEdgeFromT1toT2(trans_id, independent_trans_id)) {
+    	    	
+    	   System.out.println("checkAndAddDependency::Edge is not present"); 
+          System.out.println("checkAndAddDependency::Add dependency edge");
+           // no deadlock hence we can add the edge
+           DeadlockHandler.addDependencyEdge(independent_trans_id, trans_id);
+         }
       }
 
-
-    }
     return true;
   }
 

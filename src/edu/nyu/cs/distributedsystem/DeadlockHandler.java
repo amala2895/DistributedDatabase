@@ -71,9 +71,9 @@ public class DeadlockHandler {
 
 
   static boolean ifThereIsAnEdgeFromT1toT2(int T1, int T2) {
-    if (transaction_dependency_graph.containsKey(T2)) {
-      List<Integer> value = transaction_dependency_graph.get(T2);
-      if (value.contains(T1))
+    if (transaction_dependency_graph.containsKey(T1)) {
+      List<Integer> value = transaction_dependency_graph.get(T1);
+      if (value.contains(T2))
         return true;
     }
     return false;
