@@ -59,6 +59,22 @@ class Transaction {
     return false;
   }
 
+  boolean checkInOwnMapforRead(int varid) {
+    if (checkInCommitMap(varid)) {
+      return true;
+    }
+    return checkInReadMap(varid);
+
+
+
+  }
+
+  boolean checkInReadMap(int varid) {
+
+
+    /////// to be completed
+    return true;
+  }
 
   void readOperation(Variable v) {
 
