@@ -311,6 +311,7 @@ public class TransactionManager {
           // we have the lock so we can read it
           Variable v = variablelist.get(0);
           txn.readOperation(v);
+          addVariableToMap(trans_id, var_id);
 
         } else {
           // wait
