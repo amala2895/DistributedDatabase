@@ -27,6 +27,12 @@ class Site {
 
   void setSiteStatus(SiteStatus s) {
     currentStatus = s;
+    
+    if(s == SiteStatus.RECOVERING) {
+    	for(Integer k:indexVariable.keySet()) {
+    		indexVariable.get(k).setJustRecovered(true);
+    	}
+    }
   }
 
   void addVariable(int i, int val) {
