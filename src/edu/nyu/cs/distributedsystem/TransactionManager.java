@@ -113,6 +113,8 @@ public class TransactionManager {
     int var_id = oper.getvarid();
     int trans_id = txn.getId();
     List<Variable> variableList = null;
+    Variable v1 = txn.checkForWrite(var_id);
+
     if (!isVariableLocked(var_id)) {
       // Along side locking the variable, check if the variable is justRecovered
       // If so, set the justRecovered flag of the variable to false for the site
@@ -206,6 +208,7 @@ public class TransactionManager {
 
       return false;
     }
+
     return true;
   }
 
@@ -295,7 +298,7 @@ public class TransactionManager {
       // first we need to check if own transaction already changed its value
 
 
-      if (txn.checkInCommitMap(var_id)) {
+      if (false) {
         // reading value from commit map in transaction class
 
       } else {

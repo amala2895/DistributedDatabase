@@ -48,32 +48,36 @@ class Transaction {
     commitmap.put(v, i);
   }
 
-  boolean checkInCommitMap(int i) {
+  Variable checkForWrite(int i) {
     for (Entry<Variable, Integer> e : commitmap.entrySet()) {
 
       if (e.getKey().getIndex() == i) {
-        System.out.println("Read value of x" + e.getKey().getIndex() + ": " + e.getValue());
-        return true;
+        return e.getKey();
       }
     }
-    return false;
-  }
+    for (Variable e : readmap) {
 
-  boolean checkInOwnMapforRead(int varid) {
-    if (checkInCommitMap(varid)) {
-      return true;
+      if (e.getIndex() == i) {
+        e.writeLockVariable();
+
+        return e;
+      }
     }
-    return checkInReadMap(varid);
-
-
-
+    return null;
   }
 
-  boolean checkInReadMap(int varid) {
 
 
-    /////// to be completed
-    return true;
+  Variable checkForRead(int varid) {
+
+
+    for (Entry<Variable, Integer> e : commitmap.entrySet()) {
+
+      if (e.getKey().getIndex() == varid) {
+        return e.getKey();
+      }
+    }
+    return null;
   }
 
   void readOperation(Variable v) {
