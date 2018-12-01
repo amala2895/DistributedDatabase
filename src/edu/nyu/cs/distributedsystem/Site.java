@@ -45,9 +45,9 @@ class Site {
   int getVariableValue(int i) {
     return indexVariable.get(i).getVal();
   }
-  
+
   Map<Integer, Variable> getIndexVariable() {
-	  return indexVariable;
+    return indexVariable;
   }
 
   void printVariables() {
@@ -55,6 +55,20 @@ class Site {
       if (indexVariable.containsKey(i)) {
         System.out.print("x" + i + ": " + indexVariable.get(i).getVal() + ", ");
       }
+    }
+  }
+
+  void changeRecoveringStatus() {
+
+    if (currentStatus == SiteStatus.RECOVERING) {
+      for (Variable v : indexVariable.values()) {
+        if (v.isJustRecovered() == true) {
+          return;
+        }
+      }
+      setSiteStatus(SiteStatus.UP);
+    } else {
+      System.out.println("Something is wrong");
     }
   }
 

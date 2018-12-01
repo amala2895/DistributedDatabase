@@ -131,10 +131,10 @@ public class TransactionManager {
           // Check for the site availability before making any operation
           // if(sites.get(j).getSiteStatus() != SiteStatus.DOWN)
           // {
-          if (sites.get(j).getVariable(var_id).isJustRecovered())
+          if (sites.get(j).getVariable(var_id).isJustRecovered()) {
             sites.get(j).getVariable(var_id).setJustRecovered(false);
-
-
+            sites.get(j).changeRecoveringStatus();
+          }
           // TO DO ..check all the variable on the site
           // If justRecovered is set to false for each and site was recovering
           // set it to UP.
@@ -144,10 +144,10 @@ public class TransactionManager {
       } else {
         for (int j = 1; j <= 10; j++) {
           if (j == 1 + var_id % 10) {
-            if (sites.get(j).getVariable(var_id).isJustRecovered())
+            if (sites.get(j).getVariable(var_id).isJustRecovered()) {
               sites.get(j).getVariable(var_id).setJustRecovered(false);
-
-
+              sites.get(j).changeRecoveringStatus();
+            }
             // TO DO ..check all the variable on the site
             // If justRecovered is set to false for each and site was recovering
             // set it to UP.
