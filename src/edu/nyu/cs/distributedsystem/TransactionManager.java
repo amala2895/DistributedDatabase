@@ -86,12 +86,8 @@ public class TransactionManager {
   public static void makeWriteOperation(int trans_id, int var_id, int var_value) {
 
     System.out.println("makeWriteOperation");
-
     Transaction txn = null;
-
     Operation oper = new Operation(trans_id, var_id, var_value);
-
-
 
     if (transactions.containsKey(trans_id))
       txn = transactions.get(trans_id);
@@ -113,7 +109,10 @@ public class TransactionManager {
     int var_id = oper.getvarid();
     int trans_id = txn.getId();
     List<Variable> variableList = null;
-    Variable v1 = txn.checkForWrite(var_id);
+    if (txn.checkForWrite(var_id, oper.getValue())) {
+      // checking value in own
+      return true;
+    }
 
     if (!isVariableLocked(var_id)) {
       // Along side locking the variable, check if the variable is justRecovered
@@ -189,21 +188,22 @@ public class TransactionManager {
 
       System.out.println("writeOperation::Variable is locked");
       int independent_trans_id = transaction_variable_map.get(var_id);
+      if (independent_trans_id == trans_id) {
+        // self lock
+        // had a read lock on the same variable that want to write so we need to upgrade the locks
+        System.out.println("self lock case");
+        return true;
+      } else {
+        if (checkAndAddDependency(trans_id, independent_trans_id)) {
 
-      if (checkAndAddDependency(trans_id, independent_trans_id)) {
+          if (!alreadyWaiting(txn, oper)) {
+            System.out.println("writeOperation:: Not already waiting");
+            Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
+            waitingOperations.add(t);
 
-        if (!alreadyWaiting(txn, oper)) {
-          System.out.println("writeOperation:: Not already waiting");
-          Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
-          waitingOperations.add(t);
+          }
 
         }
-
-      } else {
-        System.out.println("writeOperation::checkAndAddDependency returned false");
-        System.out.println(" Dependent Transaction id = " + trans_id + " Independent trans id = "
-            + independent_trans_id);
-
       }
 
       return false;
@@ -298,48 +298,48 @@ public class TransactionManager {
       // first we need to check if own transaction already changed its value
 
 
-      if (false) {
+      if (txn.checkForRead(var_id)) {
         // reading value from commit map in transaction class
+        return true;
+      }
+      if (!isVariableWriteLocked(var_id)) {
+
+        List<Variable> variablelist = readlockVariable(var_id);
+
+        for (Variable v : variablelist) {
+
+          txn.addOperationToReadMap(v);
+        }
+
+        // we have the lock so we can read it
+        Variable v = variablelist.get(0);
+        txn.readOperation(v);
+        addVariableToMap(trans_id, var_id);
 
       } else {
-        if (!isVariableWriteLocked(var_id)) {
+        // wait
+        /*
+         * // if (!alreadyWaiting(txn, oper)) { Tuple<Transaction, Operation> t = new
+         * Tuple<Transaction, Operation>(txn, oper); waitingOperations.add(t); // } // check the
+         * dependency between transactions // and check if there is a deadlock; int
+         * independent_trans_id = transaction_variable_map.get(var_id);
+         * checkAndAddDependency(trans_id, independent_trans_id);
+         */
 
-          List<Variable> variablelist = readlockVariable(var_id);
+        int independent_trans_id = transaction_variable_map.get(var_id);
 
-          for (Variable v : variablelist) {
+        if (checkAndAddDependency(trans_id, independent_trans_id)) {
+          // System.out.println(txn.getId());
+          if (!alreadyWaiting(txn, oper)) {
+            Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
 
-            txn.addOperationToReadMap(v);
+            waitingOperations.add(t);
+
           }
-
-          // we have the lock so we can read it
-          Variable v = variablelist.get(0);
-          txn.readOperation(v);
-          addVariableToMap(trans_id, var_id);
-
-        } else {
-          // wait
-          /*
-           * // if (!alreadyWaiting(txn, oper)) { Tuple<Transaction, Operation> t = new
-           * Tuple<Transaction, Operation>(txn, oper); waitingOperations.add(t); // } // check the
-           * dependency between transactions // and check if there is a deadlock; int
-           * independent_trans_id = transaction_variable_map.get(var_id);
-           * checkAndAddDependency(trans_id, independent_trans_id);
-           */
-
-          int independent_trans_id = transaction_variable_map.get(var_id);
-
-          if (checkAndAddDependency(trans_id, independent_trans_id)) {
-            // System.out.println(txn.getId());
-            if (!alreadyWaiting(txn, oper)) {
-              Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
-
-              waitingOperations.add(t);
-
-            }
-          }
-          return false;
         }
+        return false;
       }
+
     } else {
 
 
@@ -357,10 +357,18 @@ public class TransactionManager {
     Map<Integer, Variable> variables = sites.get(site_id).getIndexVariable();
 
     for (Integer var : variables.keySet()) {
-      variables.get(var).unlockVariable();
-      if (transaction_variable_map.containsKey(var))
-        releaseResources(transaction_variable_map.get(var));
+      if (var % 2 != 0) {
+        // odd variable all transactions working on that need to abort
+        variables.get(var).unlockVariable();
+
+        if (transaction_variable_map.containsKey(var))
+          releaseResources(transaction_variable_map.get(var));
+      }
     }
+    // else {
+    // even variable...transactions writing on that should abort but read ones should not
+
+    // }
 
   }
 
