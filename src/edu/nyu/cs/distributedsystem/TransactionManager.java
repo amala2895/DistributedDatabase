@@ -10,6 +10,7 @@ import java.util.Map;
 
 public class TransactionManager {
   static Map<Integer, Integer> transaction_variable_map = new HashMap<Integer, Integer>();
+  static Map<Integer, Integer> transaction_variable_readOnly_map = new HashMap<Integer, Integer>();
   static Map<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
   static Map<Integer, Site> sites = new HashMap<Integer, Site>();
   static Map<Integer, List<Integer>> variable_site_map = new HashMap<Integer, List<Integer>>();
@@ -72,6 +73,8 @@ public class TransactionManager {
     }
   }
 
+  
+  
   // This function creates a transaction
   public static void beginTransaction(int trans_id, String trans_type) {
 
@@ -79,9 +82,39 @@ public class TransactionManager {
     long currTime = Instant.now().getEpochSecond();
     Transaction txn = new Transaction(trans_id, currTime, trans_type);
     transactions.put(trans_id, txn);
+    
+    if(trans_type == "RO") {
+    	setVariableListForReadOnlyTxn(txn);
+    }
   }
 
-
+  
+  
+  public static void setVariableListForReadOnlyTxn(Transaction t) {
+	  for (int j = 1; j <= 10; j++) {
+		  if(sites.get(j).getSiteStatus()==SiteStatus.UP) 
+		  {
+			  for(Integer k:sites.get(j).getIndexVariable().keySet()) 
+			  {
+				  Variable v = sites.get(j).getIndexVariable().get(k);
+				  
+				  t.getReadOnlyVarMap().put(k,v);
+			  }
+		  }
+	  }
+  }
+ 
+  
+  public static void makeReadOnlyOperation(int trans_id, int var_id) {
+	  
+	  System.out.println("makeReadOnlyOperation");
+	  
+	  Transaction txn = transactions.get(trans_id);
+	  txn.readVariableReadOnly(var_id);
+	  addVariableToReadOnlyMap(trans_id,var_id);
+	  
+  }
+  
   // This function will create the write operation and add it to the transaction
   public static void makeWriteOperation(int trans_id, int var_id, int var_value) {
 
@@ -553,7 +586,20 @@ public class TransactionManager {
   }
 
 
+//This function will be called to add variables to the read only transaction map
+ private static boolean addVariableToReadOnlyMap(int trans_id, int var_id) {
 
+
+   if (transaction_variable_readOnly_map.containsKey(var_id))
+     return false; // Some transaction has already lock on the variable
+
+   transaction_variable_readOnly_map.put(var_id, trans_id);
+   return true;
+
+ }
+  
+  
+  
   // This function will be called when there is a write operation by any transaction
   private static boolean addVariableToMap(int trans_id, int var_id) {
 
