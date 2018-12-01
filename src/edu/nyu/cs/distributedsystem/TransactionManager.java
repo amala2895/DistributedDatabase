@@ -284,7 +284,7 @@ public class TransactionManager {
 
   }
 
-  private static void readOperation(Transaction txn, Operation oper) {
+  private static boolean readOperation(Transaction txn, Operation oper) {
 
     System.out.println("readOperation");
     int var_id = oper.getvarid();
@@ -325,13 +325,16 @@ public class TransactionManager {
 
           int independent_trans_id = transaction_variable_map.get(var_id);
 
-          if (!checkAndAddDependency(trans_id, independent_trans_id)) {
+          if (checkAndAddDependency(trans_id, independent_trans_id)) {
+            // System.out.println(txn.getId());
             if (!alreadyWaiting(txn, oper)) {
               Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
+
               waitingOperations.add(t);
 
             }
           }
+          return false;
         }
       }
     } else {
@@ -341,6 +344,7 @@ public class TransactionManager {
       // read only transaction case
 
     }
+    return true;
   }
 
   // This function will make a site down
@@ -405,16 +409,20 @@ public class TransactionManager {
     System.out.println("clear waiting operations");
     while (iter.hasNext()) {
       // get transaction id
+
       // check if read or write operation
       Tuple<Transaction, Operation> t = iter.next();
       Operation oper = t.y;
       Transaction txn = t.x;
+      System.out.println("txn " + txn.getId());
       if (oper.isOperationWrite()) {
         if (writeOperation(txn, oper)) {
           iter.remove();
         }
       } else {
-        readOperation(txn, oper);
+        if (readOperation(txn, oper)) {
+          iter.remove();
+        }
       }
 
 
@@ -493,19 +501,30 @@ public class TransactionManager {
   // This function puts a lock on the variable being read by some transaction returns the variable
   // on one site
   private static List<Variable> readlockVariable(int var_id) {
-    List<Integer> s = variable_site_map.get(var_id);
     List<Variable> variablelist = new ArrayList<Variable>();
-    for (Integer i : s) {
-      // check if site is up
-      if (sites.get(i).getSiteStatus() == SiteStatus.UP) {
-        // check if variable is locked
-        Variable v = sites.get(i).getVariable(var_id);
+    List<Integer> s = variable_site_map.get(var_id);
+
+    if (var_id % 2 != 0) {
+      if (sites.get(s.get(0)).getSiteStatus() != SiteStatus.DOWN) {
+        Variable v = sites.get(s.get(0)).getVariable(var_id);
         v.readLockVariable();
         variablelist.add(v);
-        // need to lock only on one site
+      }
+    } else {
+
+
+      for (Integer i : s) {
+        // check if site is up
+        if (sites.get(i).getSiteStatus() == SiteStatus.UP) {
+          // check if variable is locked
+          Variable v = sites.get(i).getVariable(var_id);
+          v.readLockVariable();
+          variablelist.add(v);
+          // need to lock only on one site
 
 
 
+        }
       }
     }
 
