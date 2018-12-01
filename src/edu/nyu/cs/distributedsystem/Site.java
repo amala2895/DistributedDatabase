@@ -29,7 +29,8 @@ class Site {
     currentStatus = s;
     
     if(s == SiteStatus.RECOVERING) {
-    	for(Integer k:indexVariable.keySet()) {
+    	for(Integer k:indexVariable.keySet()) 
+    	{
     		indexVariable.get(k).setJustRecovered(true);
     	}
     }
