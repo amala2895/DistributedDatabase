@@ -444,6 +444,7 @@ public class TransactionManager {
       if (commitTransaction(trans_id)) {
         // after committing we need to check which other transactions are waiting
         clearWaitingOperations();
+        transactions.remove(trans_id);
       }
 
     } else {
