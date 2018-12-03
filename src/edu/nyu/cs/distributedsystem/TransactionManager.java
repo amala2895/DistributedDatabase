@@ -387,6 +387,7 @@ public class TransactionManager {
     for (Integer var : variables.keySet()) {
       if (var % 2 != 0) {
         // odd variable all transactions working on that need to abort
+
         variables.get(var).unlockVariable();
 
         if (transaction_variable_map.containsKey(var))
@@ -626,15 +627,24 @@ public class TransactionManager {
 
   // Abort/End the transaction and release resources
   private static void releaseResources(int trans_id) {
+
+
     System.out.println("Releasing resources");
     // Remove the hold of transaction from the variables
-    for (int var_id : transaction_variable_map.keySet()) {
-      if (transaction_variable_map.get(var_id).equals(trans_id)) {
-        transaction_variable_map.remove(var_id);
-        List<Variable> variables = variable_copies_map.get(var_id);
+
+    Iterator<Map.Entry<Integer, Integer>> it = transaction_variable_map.entrySet().iterator();
+
+
+    while (it.hasNext()) {
+      Map.Entry<Integer, Integer> pair = (Map.Entry<Integer, Integer>) it.next();
+
+      if (pair.getValue().equals(trans_id)) {
+
+        List<Variable> variables = variable_copies_map.get(pair.getKey());
         for (Variable v : variables) {
           v.unlockVariable();
         }
+        it.remove();
       }
 
 
