@@ -392,11 +392,19 @@ public class TransactionManager {
         if (transaction_variable_map.containsKey(var))
           releaseResources(transaction_variable_map.get(var));
       }
-    }
-    // else {
-    // even variable...transactions writing on that should abort but read ones should not
 
-    // }
+      else {
+        // even variable...transactions writing on that should abort but read ones should not
+        if (transaction_variable_map.containsKey(var)) {
+          Transaction txn = transactions.get(transaction_variable_map.get(var));
+          if (txn.checkInCommitMap(var)) {
+            releaseResources(transaction_variable_map.get(var));
+          }
+        }
+      }
+
+    }
+
 
   }
 

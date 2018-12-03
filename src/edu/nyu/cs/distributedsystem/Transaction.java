@@ -14,7 +14,7 @@ class Transaction {
   private List<Operation> txn_operations;
   private Map<Variable, Integer> commitmap;
   private List<Variable> readmap;
-  private Map<Integer,Integer> readOnlyVarMap;
+  private Map<Integer, Integer> readOnlyVarMap;
 
   Transaction(int id, long start_time, String trans_type) {
     this.txn_id = id;
@@ -41,12 +41,12 @@ class Transaction {
     return this.txn_id;
   }
 
-  Map<Integer,Integer> getReadOnlyVarMap(){
-	  return readOnlyVarMap;
+  Map<Integer, Integer> getReadOnlyVarMap() {
+    return readOnlyVarMap;
   }
-  
-  
-  
+
+
+
   void addOperationToTransaction(Operation oper) {
     txn_operations.add(oper);
   }
@@ -69,7 +69,18 @@ class Transaction {
     return flag;
   }
 
+  boolean checkInCommitMap(int var_id) {
+    boolean flag = false;
+    for (Entry<Variable, Integer> e : commitmap.entrySet()) {
 
+      if (e.getKey().getIndex() == var_id) {
+        flag = true;
+
+      }
+    }
+
+    return flag;
+  }
 
   boolean checkForRead(int varid) {
 
@@ -84,12 +95,12 @@ class Transaction {
     }
     return false;
   }
-  
-  
+
+
   void readVariableReadOnly(Integer var_id) {
-	  if(readOnlyVarMap.containsKey(var_id)) {
-		  System.out.println("Read value of x_" + var_id + ": " + readOnlyVarMap.get(var_id));
-	  }
+    if (readOnlyVarMap.containsKey(var_id)) {
+      System.out.println("Read value of x_" + var_id + ": " + readOnlyVarMap.get(var_id));
+    }
   }
 
   void readOperation(Variable v) {
