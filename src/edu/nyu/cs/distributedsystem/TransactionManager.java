@@ -96,7 +96,7 @@ public class TransactionManager {
         for (Integer k : sites.get(j).getIndexVariable().keySet()) {
           Variable v = sites.get(j).getIndexVariable().get(k);
 
-          t.getReadOnlyVarMap().put(k, v);
+          t.getReadOnlyVarMap().put(k, v.getVal());
         }
       }
     }
