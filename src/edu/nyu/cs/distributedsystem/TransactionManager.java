@@ -142,6 +142,7 @@ public class TransactionManager {
     List<Variable> variableList = null;
     if (txn.checkForWrite(var_id, oper.getValue())) {
       // checking value in own
+      System.out.println("own variable write");
       return true;
     }
 
@@ -222,7 +223,58 @@ public class TransactionManager {
       if (independent_trans_id == trans_id) {
         // self lock
         // had a read lock on the same variable that want to write so we need to upgrade the locks
-        System.out.println("self lock case");
+
+
+
+        System.out.println("writeOperation::Variable self read locked");
+        // getting all variable copies
+        variableList = writelockVariable(var_id);
+
+        if (var_id % 2 == 0) {
+          for (int j = 1; j <= 10; j++) {
+
+            // Check for the site availability before making any operation
+            // if(sites.get(j).getSiteStatus() != SiteStatus.DOWN)
+            // {
+            if (sites.get(j).getVariable(var_id).isJustRecovered()) {
+              sites.get(j).getVariable(var_id).setJustRecovered(false);
+              sites.get(j).changeRecoveringStatus();
+            }
+            // TO DO ..check all the variable on the site
+            // If justRecovered is set to false for each and site was recovering
+            // set it to UP.
+
+            // }
+          }
+        } else {
+          for (int j = 1; j <= 10; j++) {
+            if (j == 1 + var_id % 10) {
+              if (sites.get(j).getVariable(var_id).isJustRecovered()) {
+                sites.get(j).getVariable(var_id).setJustRecovered(false);
+                sites.get(j).changeRecoveringStatus();
+              }
+              // TO DO ..check all the variable on the site
+              // If justRecovered is set to false for each and site was recovering
+              // set it to UP.
+            }
+          }
+        }
+
+        // not sure about use of this below statement
+        txn.addOperationToTransaction(oper);
+
+        // add to transaction variable-transaction map
+        addVariableToMap(trans_id, var_id);
+
+        // since we got the lock we can execute it
+        // add all the variables of each site to the commit map of transaction
+        for (Variable v : variableList) {
+
+          txn.addOperationToCommitMap(v, oper.getValue());
+        }
+
+
+
         return true;
       } else {
         if (checkAndAddDependency(trans_id, independent_trans_id)) {
@@ -339,17 +391,20 @@ public class TransactionManager {
     if (!isVariableWriteLocked(var_id)) {
 
       List<Variable> variablelist = readlockVariable(var_id);
+      if (!variablelist.isEmpty()) {
+        for (Variable v : variablelist) {
 
-      for (Variable v : variablelist) {
+          txn.addOperationToReadMap(v);
+        }
 
-        txn.addOperationToReadMap(v);
+        // we have the lock so we can read it
+        Variable v = variablelist.get(0);
+        txn.readOperation(v);
+        addVariableToMap(trans_id, var_id);
+      } else {
+        releaseResources(trans_id);
+        clearWaitingOperations();
       }
-
-      // we have the lock so we can read it
-      Variable v = variablelist.get(0);
-      txn.readOperation(v);
-      addVariableToMap(trans_id, var_id);
-
     } else {
       // wait
       /*
@@ -445,6 +500,21 @@ public class TransactionManager {
         // after committing we need to check which other transactions are waiting
         clearWaitingOperations();
         transactions.remove(trans_id);
+        Iterator<Map.Entry<Integer, Integer>> it = transaction_variable_map.entrySet().iterator();
+
+
+        while (it.hasNext()) {
+          Map.Entry<Integer, Integer> pair = (Map.Entry<Integer, Integer>) it.next();
+
+          if (pair.getValue().equals(trans_id)) {
+
+
+            it.remove();
+          }
+
+
+        }
+
       }
 
     } else {
