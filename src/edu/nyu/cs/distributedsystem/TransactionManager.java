@@ -73,8 +73,8 @@ public class TransactionManager {
     }
   }
 
-  
-  
+
+
   // This function creates a transaction
   public static void beginTransaction(int trans_id, String trans_type) {
 
@@ -82,39 +82,37 @@ public class TransactionManager {
     long currTime = Instant.now().getEpochSecond();
     Transaction txn = new Transaction(trans_id, currTime, trans_type);
     transactions.put(trans_id, txn);
-    
-    if(trans_type == "RO") {
-    	setVariableListForReadOnlyTxn(txn);
+
+    if (trans_type == "RO") {
+      setVariableListForReadOnlyTxn(txn);
     }
   }
 
-  
-  
+
+
   public static void setVariableListForReadOnlyTxn(Transaction t) {
-	  for (int j = 1; j <= 10; j++) {
-		  if(sites.get(j).getSiteStatus()==SiteStatus.UP) 
-		  {
-			  for(Integer k:sites.get(j).getIndexVariable().keySet()) 
-			  {
-				  Variable v = sites.get(j).getIndexVariable().get(k);
-				  
-				  t.getReadOnlyVarMap().put(k,v);
-			  }
-		  }
-	  }
+    for (int j = 1; j <= 10; j++) {
+      if (sites.get(j).getSiteStatus() == SiteStatus.UP) {
+        for (Integer k : sites.get(j).getIndexVariable().keySet()) {
+          Variable v = sites.get(j).getIndexVariable().get(k);
+
+          t.getReadOnlyVarMap().put(k, v);
+        }
+      }
+    }
   }
- 
-  
+
+
   public static void makeReadOnlyOperation(int trans_id, int var_id) {
-	  
-	  System.out.println("makeReadOnlyOperation");
-	  
-	  Transaction txn = transactions.get(trans_id);
-	  txn.readVariableReadOnly(var_id);
-	  addVariableToReadOnlyMap(trans_id,var_id);
-	  
+
+    System.out.println("makeReadOnlyOperation");
+
+    Transaction txn = transactions.get(trans_id);
+    txn.readVariableReadOnly(var_id);
+    addVariableToReadOnlyMap(trans_id, var_id);
+
   }
-  
+
   // This function will create the write operation and add it to the transaction
   public static void makeWriteOperation(int trans_id, int var_id, int var_value) {
 
@@ -306,12 +304,19 @@ public class TransactionManager {
   // This function will create the read operation and add it to the transaction
   public static void makeReadOperation(int trans_id, int var_id) {
 
-    System.out.println("makeReadOperation");
     Transaction txn = null;
-    Operation oper = new Operation(trans_id, var_id);
     if (transactions.containsKey(trans_id))
       txn = transactions.get(trans_id);
     if (txn != null) {
+      if (txn.getType() == TransactionType.RO) {
+        makeReadOnlyOperation(trans_id, var_id);
+        return;
+      }
+
+
+      System.out.println("makeReadOperation");
+
+      Operation oper = new Operation(trans_id, var_id);
       readOperation(txn, oper);
     } else {
       // aborted
@@ -325,61 +330,51 @@ public class TransactionManager {
     System.out.println("readOperation");
     int var_id = oper.getvarid();
     int trans_id = txn.getId();
-    if (txn.getType() == TransactionType.RW) {
-      txn.addOperationToTransaction(oper);
-
-      // first we need to check if own transaction already changed its value
 
 
-      if (txn.checkForRead(var_id)) {
-        // reading value from commit map in transaction class
-        return true;
+    if (txn.checkForRead(var_id)) {
+      // reading value from commit map in transaction class
+      return true;
+    }
+    if (!isVariableWriteLocked(var_id)) {
+
+      List<Variable> variablelist = readlockVariable(var_id);
+
+      for (Variable v : variablelist) {
+
+        txn.addOperationToReadMap(v);
       }
-      if (!isVariableWriteLocked(var_id)) {
 
-        List<Variable> variablelist = readlockVariable(var_id);
-
-        for (Variable v : variablelist) {
-
-          txn.addOperationToReadMap(v);
-        }
-
-        // we have the lock so we can read it
-        Variable v = variablelist.get(0);
-        txn.readOperation(v);
-        addVariableToMap(trans_id, var_id);
-
-      } else {
-        // wait
-        /*
-         * // if (!alreadyWaiting(txn, oper)) { Tuple<Transaction, Operation> t = new
-         * Tuple<Transaction, Operation>(txn, oper); waitingOperations.add(t); // } // check the
-         * dependency between transactions // and check if there is a deadlock; int
-         * independent_trans_id = transaction_variable_map.get(var_id);
-         * checkAndAddDependency(trans_id, independent_trans_id);
-         */
-
-        int independent_trans_id = transaction_variable_map.get(var_id);
-
-        if (checkAndAddDependency(trans_id, independent_trans_id)) {
-          // System.out.println(txn.getId());
-          if (!alreadyWaiting(txn, oper)) {
-            Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
-
-            waitingOperations.add(t);
-
-          }
-        }
-        return false;
-      }
+      // we have the lock so we can read it
+      Variable v = variablelist.get(0);
+      txn.readOperation(v);
+      addVariableToMap(trans_id, var_id);
 
     } else {
+      // wait
+      /*
+       * // if (!alreadyWaiting(txn, oper)) { Tuple<Transaction, Operation> t = new
+       * Tuple<Transaction, Operation>(txn, oper); waitingOperations.add(t); // } // check the
+       * dependency between transactions // and check if there is a deadlock; int
+       * independent_trans_id = transaction_variable_map.get(var_id);
+       * checkAndAddDependency(trans_id, independent_trans_id);
+       */
 
+      int independent_trans_id = transaction_variable_map.get(var_id);
 
+      if (checkAndAddDependency(trans_id, independent_trans_id)) {
+        // System.out.println(txn.getId());
+        if (!alreadyWaiting(txn, oper)) {
+          Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
 
-      // read only transaction case
+          waitingOperations.add(t);
 
+        }
+      }
+      return false;
     }
+
+
     return true;
   }
 
@@ -594,20 +589,20 @@ public class TransactionManager {
   }
 
 
-//This function will be called to add variables to the read only transaction map
- private static boolean addVariableToReadOnlyMap(int trans_id, int var_id) {
+  // This function will be called to add variables to the read only transaction map
+  private static boolean addVariableToReadOnlyMap(int trans_id, int var_id) {
 
 
-   if (transaction_variable_readOnly_map.containsKey(var_id))
-     return false; // Some transaction has already lock on the variable
+    if (transaction_variable_readOnly_map.containsKey(var_id))
+      return false; // Some transaction has already lock on the variable
 
-   transaction_variable_readOnly_map.put(var_id, trans_id);
-   return true;
+    transaction_variable_readOnly_map.put(var_id, trans_id);
+    return true;
 
- }
-  
-  
-  
+  }
+
+
+
   // This function will be called when there is a write operation by any transaction
   private static boolean addVariableToMap(int trans_id, int var_id) {
 
