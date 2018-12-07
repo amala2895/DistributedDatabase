@@ -14,6 +14,10 @@ import java.util.Map;
 class Site {
 
   private SiteStatus currentStatus;
+  /**
+   * List of variables residing on this site
+   * 
+   */
   private Map<Integer, Variable> indexVariable;
   private int siteNumber;
 
@@ -42,6 +46,12 @@ class Site {
     }
   }
 
+  /**
+   * Creates new variable object, adds it
+   * 
+   * @param i
+   * @param val
+   */
   void addVariable(int i, int val) {
     Variable newVariable = new Variable(i, val, siteNumber);
     indexVariable.put(i, newVariable);

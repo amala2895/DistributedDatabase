@@ -15,15 +15,36 @@ import java.util.Map;
  *
  */
 public class TransactionManager {
+
   static Map<Integer, Integer> transaction_variable_map = new HashMap<Integer, Integer>();
+  // may be redundant
   static Map<Integer, Integer> transaction_variable_readOnly_map = new HashMap<Integer, Integer>();
+
+  /**
+   * This map holds all the transactions currently running. If a transaction is aborted it is
+   * removed from this map. When tranaction ends it is removed from this map.
+   */
   static Map<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
+
+  /**
+   * Stores all the sites with key as id and object as value
+   */
   static Map<Integer, Site> sites = new HashMap<Integer, Site>();
+
+  /**
+   * Variable id is the key, and list of sites ids on which variable resides is the value
+   */
   static Map<Integer, List<Integer>> variable_site_map = new HashMap<Integer, List<Integer>>();
 
+  /**
+   * This holds all the operations that wait due to variable being locked.
+   */
   static List<Tuple<Transaction, Operation>> waitingOperations =
       new ArrayList<Tuple<Transaction, Operation>>();
 
+  /**
+   * Variable id the key, List of Variable objects which are copies of the variable is the list
+   */
   static Map<Integer, List<Variable>> variable_copies_map = new HashMap<Integer, List<Variable>>();
 
 
@@ -37,10 +58,12 @@ public class TransactionManager {
     }
   }
 
-  // Initialize the sites
+  /**
+   * Initializes the site
+   */
   public static void initializeSites() {
 
-    System.out.println("initializeSites()");
+    // System.out.println("initializeSites()");
     Site site = null;
     for (int i = 1; i <= 10; i++) {
       site = new Site(i);
@@ -48,14 +71,17 @@ public class TransactionManager {
     }
   }
 
-  // Initialize the variables
+  /**
+   * Initialize the 20 variables
+   */
   public static void initializeVariables() {
 
     for (int i = 1; i <= 20; i++) {
 
-      System.out.println("initializeVariables()");
+      // System.out.println("initializeVariables()");
       List<Variable> variablecopies = new LinkedList<Variable>();
       List<Integer> siteList = new LinkedList<Integer>();
+
       Variable var = null;
       if (i % 2 == 0) {
         for (int j = 1; j <= 10; j++) {
@@ -81,10 +107,15 @@ public class TransactionManager {
 
 
 
-  // This function creates a transaction
+  /**
+   * This function creates new Transaction
+   * 
+   * @param trans_id
+   * @param trans_type
+   */
   public static void beginTransaction(int trans_id, String trans_type) {
 
-    System.out.println("beginTransaction");
+    // System.out.println("beginTransaction");
     long currTime = Instant.now().getEpochSecond();
     Transaction txn = new Transaction(trans_id, currTime, trans_type);
     transactions.put(trans_id, txn);
@@ -96,7 +127,7 @@ public class TransactionManager {
 
 
 
-  public static void setVariableListForReadOnlyTxn(Transaction t) {
+  private static void setVariableListForReadOnlyTxn(Transaction t) {
     for (int j = 1; j <= 10; j++) {
       if (sites.get(j).getSiteStatus() == SiteStatus.UP) {
         for (Integer k : sites.get(j).getIndexVariable().keySet()) {
@@ -109,12 +140,13 @@ public class TransactionManager {
   }
 
 
-  public static void makeReadOnlyOperation(int trans_id, int var_id) {
+  private static void makeReadOnlyOperation(int trans_id, int var_id) {
 
-    System.out.println("makeReadOnlyOperation");
+    // System.out.println("makeReadOnlyOperation");
 
     Transaction txn = transactions.get(trans_id);
     txn.readVariableReadOnly(var_id);
+    // may be redundant
     addVariableToReadOnlyMap(trans_id, var_id);
 
   }
@@ -141,11 +173,13 @@ public class TransactionManager {
   private static boolean writeOperation(Transaction txn, Operation oper) {
 
 
-    System.out
-        .println("writeOperation:: Trans_id = " + txn.getId() + "Var id = " + oper.getvarid());
+    // System.out.println("writeOperation:: Trans_id = " + txn.getId() + "Var id = " +
+    // oper.getvarid());
     int var_id = oper.getvarid();
     int trans_id = txn.getId();
     List<Variable> variableList = null;
+    // ********NEED TO CHANGE
+
     if (txn.checkForWrite(var_id, oper.getValue())) {
       // checking value in own
       System.out.println("own variable write");
@@ -160,7 +194,7 @@ public class TransactionManager {
       // If the site status is RECOVERING, set the justRecovered flag to false
       // for that copy of the variable.
 
-      System.out.println("writeOperation::Variable not locked");
+      // System.out.println("writeOperation::Variable not locked");
       // getting all variable copies
       variableList = writelockVariable(var_id);
 
@@ -359,7 +393,14 @@ public class TransactionManager {
     return true;
   }
 
-  // This function will create the read operation and add it to the transaction
+  /**
+   * This method is called when a read operation arrives. If the the transaction was read only then
+   * makereadOnlyOperation is called. If we dont find the transaction in the transaction list then
+   * we assume that transaction was aborted.
+   * 
+   * @param trans_id
+   * @param var_id
+   */
   public static void makeReadOperation(int trans_id, int var_id) {
 
     Transaction txn = null;
@@ -370,30 +411,31 @@ public class TransactionManager {
         makeReadOnlyOperation(trans_id, var_id);
         return;
       }
-
-
-      System.out.println("makeReadOperation");
+      // System.out.println("makeReadOperation");
 
       Operation oper = new Operation(trans_id, var_id);
       readOperation(txn, oper);
     } else {
       // aborted
-      System.out.println("Aborted :" + trans_id);
+      System.out.println("Aborted : " + trans_id);
     }
 
   }
 
   private static boolean readOperation(Transaction txn, Operation oper) {
 
-    System.out.println("readOperation");
+    // System.out.println("readOperation");
     int var_id = oper.getvarid();
     int trans_id = txn.getId();
 
-
+    // **********this should come after checking middle transaction
     if (txn.checkForRead(var_id)) {
       // reading value from commit map in transaction class
       return true;
     }
+
+
+
     if (!isVariableWriteLocked(var_id)) {
 
       List<Variable> variablelist = readlockVariable(var_id);
