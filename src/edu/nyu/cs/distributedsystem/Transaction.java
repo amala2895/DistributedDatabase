@@ -96,7 +96,7 @@ class Transaction {
     for (Entry<Variable, Integer> e : commitmap.entrySet()) {
 
       if (e.getKey().getIndex() == varid) {
-        System.out.println("Read value of x" + varid + ": " + e.getValue());
+        System.out.println("T" + txn_id + " x" + varid + ": " + e.getValue());
 
         return true;
       }
@@ -107,13 +107,13 @@ class Transaction {
 
   void readVariableReadOnly(Integer var_id) {
     if (readOnlyVarMap.containsKey(var_id)) {
-      System.out.println("x" + var_id + ": " + readOnlyVarMap.get(var_id));
+      System.out.println("T" + txn_id + " x" + var_id + ": " + readOnlyVarMap.get(var_id));
     }
   }
 
   void readOperation(Variable v) {
 
-    System.out.println("x" + v.getIndex() + ": " + v.getVal());
+    System.out.println("T" + txn_id + " x" + v.getIndex() + ": " + v.getVal());
 
   }
 

@@ -49,16 +49,16 @@ public class Parser {
       String type = "RW";
       if (line.contains("RO"))
         type = "RO";
-      System.out.println("PARSER:begin - " + tid + " " + type);
+      // System.out.println("PARSER:begin - " + tid + " " + type);
       TransactionManager.beginTransaction(tid, type);
 
     } else if (line.startsWith("end")) {
       int tid = Integer.parseInt(line.substring(line.indexOf("T") + 1, line.indexOf(")")));
-      System.out.println("PARSER:end -" + tid);
+      // System.out.println("PARSER:end -" + tid);
       TransactionManager.endTransaction(tid);
 
     } else if (line.startsWith("dump")) {
-      System.out.println("PARSER:dump");
+      // System.out.println("PARSER:dump");
       if (line.equalsIgnoreCase("dump()")) {
         TransactionManager.dump();
       } else if (line.startsWith("dump(x")) {
@@ -72,24 +72,24 @@ public class Parser {
     } else if (line.contains("R(")) {
       int tid = Integer.parseInt(line.substring(line.indexOf("T") + 1, line.indexOf(",")));
       int vid = Integer.parseInt(line.substring(line.indexOf("x") + 1, line.indexOf(")")));
-      System.out.println("PARSER:Read -" + tid + " " + vid);
+      // System.out.println("PARSER:Read -" + tid + " " + vid);
       TransactionManager.makeReadOperation(tid, vid);
 
     } else if (line.contains("W(")) {
       int tid = Integer.parseInt(line.substring(line.indexOf("T") + 1, line.indexOf(",")));
       int vid = Integer.parseInt(line.substring(line.indexOf("x") + 1, line.lastIndexOf(",")));
       int value = Integer.parseInt(line.substring(line.lastIndexOf(",") + 1, line.indexOf(")")));
-      System.out.println("PARSER:Write -" + tid + " " + vid + " " + value);
+      // System.out.println("PARSER:Write -" + tid + " " + vid + " " + value);
       TransactionManager.makeWriteOperation(tid, vid, value);
 
     } else if (line.contains("fail")) {
       int sid = Integer.parseInt(line.substring(line.indexOf("(") + 1, line.indexOf(")")));
-      System.out.println("PARSER:fail" + sid);
+      // System.out.println("PARSER:fail" + sid);
       TransactionManager.failSite(sid);
 
     } else if (line.contains("recover")) {
       int sid = Integer.parseInt(line.substring(line.indexOf("(") + 1, line.indexOf(")")));
-      System.out.println("PARSER:recover" + sid);
+      // System.out.println("PARSER:recover" + sid);
       TransactionManager.recoverSite(sid);
     }
   }

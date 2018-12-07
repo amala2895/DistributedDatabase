@@ -23,7 +23,8 @@ class DeadlockHandler {
   }
 
   static void addDependencyEdge(int independent_trans, int dependent_trans) {
-
+    System.out
+        .println("T" + dependent_trans + "->T" + independent_trans + " added to Wait For Graph");
     if (transaction_dependency_graph.containsKey(dependent_trans)) {
       List<Integer> value = transaction_dependency_graph.get(dependent_trans);
       value.add(independent_trans);
