@@ -39,9 +39,10 @@ class Site {
   void setSiteStatus(SiteStatus s) {
     currentStatus = s;
 
-    if (s == SiteStatus.RECOVERING) {
+    if (s == SiteStatus.DOWN) {
       for (Integer k : indexVariable.keySet()) {
-        indexVariable.get(k).setJustRecovered(true);
+    	if(k % 2 == 0)
+    		indexVariable.get(k).setJustRecovered(true);
       }
     }
   }

@@ -125,9 +125,10 @@ class Transaction {
     for (Entry<Variable, Integer> e : commitmap.entrySet()) {
       Variable v = e.getKey();
       Site s = TransactionManager.sites.get(v.getSiteIndex());
-      if (s.getSiteStatus() != SiteStatus.DOWN) {
+      if (s.getSiteStatus() == SiteStatus.UP) {
         v.setVal(e.getValue());
         v.unlockVariable();
+        v.setJustRecovered(false);
       }
 
 

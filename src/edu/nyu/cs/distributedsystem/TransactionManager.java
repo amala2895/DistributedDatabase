@@ -41,6 +41,20 @@ public class TransactionManager {
    */
   static List<Tuple<Transaction, Operation>> waitingOperations =
       new ArrayList<Tuple<Transaction, Operation>>();
+  
+  /**
+   * This holds all the reading transactions-operations that wait due to either site being down or the
+   * variable just got recovered.
+   */
+  static List<Tuple<Transaction, Operation>> waitingReadOperations =
+      new ArrayList<Tuple<Transaction, Operation>>();
+  
+  /**
+   * This holds all the writing transactions-operations that wait due to either site being down or the
+   * variable just got recovered.
+   */
+  static List<Tuple<Transaction, Operation>> waitingWriteOperations =
+      new ArrayList<Tuple<Transaction, Operation>>();
 
   /**
    * Variable id the key, List of Variable objects which are copies of the variable is the list
@@ -197,50 +211,32 @@ public class TransactionManager {
       // System.out.println("writeOperation::Variable not locked");
       // getting all variable copies
       variableList = writelockVariable(var_id);
+      
+      if (!variableList.isEmpty()) {
+    	  
+    	// not sure about use of this below statement
+          txn.addOperationToTransaction(oper);
 
-      if (var_id % 2 == 0) {
-        for (int j = 1; j <= 10; j++) {
+          // add to transaction variable-transaction map
+          addVariableToMap(trans_id, var_id);
 
-          // Check for the site availability before making any operation
-          // if(sites.get(j).getSiteStatus() != SiteStatus.DOWN)
-          // {
-          if (sites.get(j).getVariable(var_id).isJustRecovered()) {
-            sites.get(j).getVariable(var_id).setJustRecovered(false);
-            sites.get(j).changeRecoveringStatus();
+          // since we got the lock we can execute it
+          // add all the variables of each site to the commit map of transaction
+          for (Variable v : variableList) {
+
+            txn.addOperationToCommitMap(v, oper.getValue());
           }
-          // TO DO ..check all the variable on the site
-          // If justRecovered is set to false for each and site was recovering
-          // set it to UP.
+          
+          
 
-          // }
+        } else {
+      	  Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
+
+            waitingWriteOperations.add(t);
+          //releaseResources(trans_id);
+          //clearWaitingOperations();
         }
-      } else {
-        for (int j = 1; j <= 10; j++) {
-          if (j == 1 + var_id % 10) {
-            if (sites.get(j).getVariable(var_id).isJustRecovered()) {
-              sites.get(j).getVariable(var_id).setJustRecovered(false);
-              sites.get(j).changeRecoveringStatus();
-            }
-            // TO DO ..check all the variable on the site
-            // If justRecovered is set to false for each and site was recovering
-            // set it to UP.
-          }
-        }
-      }
-
-      // not sure about use of this below statement
-      txn.addOperationToTransaction(oper);
-
-      // add to transaction variable-transaction map
-      addVariableToMap(trans_id, var_id);
-
-      // since we got the lock we can execute it
-      // add all the variables of each site to the commit map of transaction
-      for (Variable v : variableList) {
-
-        txn.addOperationToCommitMap(v, oper.getValue());
-      }
-
+    
     } else {
       // check if already waiting
       // if (!alreadyWaiting(txn, oper)) {
@@ -450,8 +446,11 @@ public class TransactionManager {
         txn.readOperation(v);
         addVariableToMap(trans_id, var_id);
       } else {
-        releaseResources(trans_id);
-        clearWaitingOperations();
+    	  Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
+
+          waitingOperations.add(t);
+        //releaseResources(trans_id);
+        //clearWaitingOperations();
       }
     } else {
       // wait
@@ -488,33 +487,19 @@ public class TransactionManager {
     Map<Integer, Variable> variables = sites.get(site_id).getIndexVariable();
 
     for (Integer var : variables.keySet()) {
-      if (var % 2 != 0) {
-        // odd variable all transactions working on that need to abort
-
+    	
         variables.get(var).unlockVariable();
 
         if (transaction_variable_map.containsKey(var))
           releaseResources(transaction_variable_map.get(var));
-      }
-
-      else {
-        // even variable...transactions writing on that should abort but read ones should not
-        if (transaction_variable_map.containsKey(var)) {
-          Transaction txn = transactions.get(transaction_variable_map.get(var));
-          if (txn.checkInCommitMap(var)) {
-            releaseResources(transaction_variable_map.get(var));
-          }
-        }
-      }
-
     }
-
 
   }
 
   // This function will recover a site from failure
   public static void recoverSite(int site_id) {
-    sites.get(site_id).setSiteStatus(SiteStatus.RECOVERING);
+    sites.get(site_id).setSiteStatus(SiteStatus.UP);
+    clearWaitingWriteOperations();
   }
 
   public static void dump() {
@@ -596,6 +581,25 @@ public class TransactionManager {
     }
 
   }
+  
+  
+  private static void clearWaitingWriteOperations() {
+	    Iterator<Tuple<Transaction, Operation>> iter = waitingWriteOperations.iterator();
+
+	    System.out.println("clear waiting operations");
+	    while (iter.hasNext()) {
+	      // get transaction id
+
+	      // check if read or write operation
+	      Tuple<Transaction, Operation> t = iter.next();
+	      Operation oper = t.y;
+	      Transaction txn = t.x;
+	      System.out.println("txn " + txn.getId());
+	        if (writeOperation(txn, oper)) 
+	          iter.remove();
+	     
+	    }
+	  }
 
   // This function commits a transaction
   private static boolean commitTransaction(int trans_id) {
@@ -618,20 +622,13 @@ public class TransactionManager {
     for (Integer i : variable_site_map.get(var_id)) {
       Site s = sites.get(i);
       if (s.getSiteStatus() == SiteStatus.UP) {
-        // if not just recovered only then check lock
-        Variable v = s.getVariable(var_id);
-        if (!v.isJustRecovered()) {
+    	  Variable v = s.getVariable(var_id);
+     
           // if read or write locked return true
-          if (v.isReadLocked() || v.isWriteLocked()) {
-            toReturn = true;
-
-          }
-          // break as we need to check on only one UP site. The rest of the sites should have the
-          // same values
-          break;
-        }
+          if (v.isReadLocked() || v.isWriteLocked()) 
+            return true;
+     
       }
-
     }
     return toReturn;
 
@@ -647,17 +644,10 @@ public class TransactionManager {
       if (s.getSiteStatus() == SiteStatus.UP) {
         // if not just recovered only then check lock
         Variable v = s.getVariable(var_id);
-        if (!v.isJustRecovered()) {
           // if read or write locked return true
 
-          if (v.isWriteLocked()) {
-            toReturn = true;
-
-          }
-          // break as we need to check on only one UP site. The rest of the sites should have the
-          // same values
-          break;
-        }
+          if (v.isWriteLocked())
+            return true;
       }
 
     }
@@ -671,25 +661,23 @@ public class TransactionManager {
     List<Variable> variablelist = new ArrayList<Variable>();
     List<Integer> s = variable_site_map.get(var_id);
 
+    //If the variable is odd, simply get the lock
     if (var_id % 2 != 0) {
-      if (sites.get(s.get(0)).getSiteStatus() != SiteStatus.DOWN) {
+      if (sites.get(s.get(0)).getSiteStatus() == SiteStatus.UP) {
         Variable v = sites.get(s.get(0)).getVariable(var_id);
         v.readLockVariable();
         variablelist.add(v);
       }
     } else {
-
-
       for (Integer i : s) {
         // check if site is up
         if (sites.get(i).getSiteStatus() == SiteStatus.UP) {
-          // check if variable is locked
+
           Variable v = sites.get(i).getVariable(var_id);
-          v.readLockVariable();
-          variablelist.add(v);
-          // need to lock only on one site
-
-
+          if(!v.isJustRecovered()) {
+        	  v.readLockVariable();
+        	  variablelist.add(v);
+          }
 
         }
       }
@@ -704,8 +692,8 @@ public class TransactionManager {
     List<Integer> s = variable_site_map.get(var_id);
     for (Integer i : s) {
       // check if site is up
-      if (sites.get(i).getSiteStatus() == SiteStatus.UP
-          || sites.get(i).getSiteStatus() == SiteStatus.RECOVERING) {
+      if (sites.get(i).getSiteStatus() == SiteStatus.UP)
+      {
         // lock variable
         Variable v = sites.get(i).getVariable(var_id);
         v.writeLockVariable();
