@@ -1,5 +1,11 @@
 package edu.nyu.cs.distributedsystem;
 
+/**
+ * This class holds the variable, its value and whether it is locked or not.
+ * 
+ * @author Amala Deshpande and Anshu Tomar
+ *
+ */
 class Variable {
 
   private int index;

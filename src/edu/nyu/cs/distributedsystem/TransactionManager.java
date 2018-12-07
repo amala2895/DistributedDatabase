@@ -8,6 +8,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This class is the Transaction Manager.
+ * 
+ * @author Amala Deshpande and Anshu Tomar
+ *
+ */
 public class TransactionManager {
   static Map<Integer, Integer> transaction_variable_map = new HashMap<Integer, Integer>();
   static Map<Integer, Integer> transaction_variable_readOnly_map = new HashMap<Integer, Integer>();

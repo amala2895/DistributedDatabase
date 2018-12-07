@@ -4,6 +4,13 @@ package edu.nyu.cs.distributedsystem;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * This class holds the site details, like whether site is up or down and all the variables present
+ * on this site.
+ * 
+ * @author Amala Deshpande and Anshu Tomar
+ *
+ */
 class Site {
 
   private SiteStatus currentStatus;
@@ -27,12 +34,11 @@ class Site {
 
   void setSiteStatus(SiteStatus s) {
     currentStatus = s;
-    
-    if(s == SiteStatus.RECOVERING) {
-    	for(Integer k:indexVariable.keySet()) 
-    	{
-    		indexVariable.get(k).setJustRecovered(true);
-    	}
+
+    if (s == SiteStatus.RECOVERING) {
+      for (Integer k : indexVariable.keySet()) {
+        indexVariable.get(k).setJustRecovered(true);
+      }
     }
   }
 

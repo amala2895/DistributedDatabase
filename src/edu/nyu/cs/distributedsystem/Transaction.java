@@ -6,6 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/**
+ * This class stores the transactions and its details. It stores the variables that are written/read
+ * by the transaction. It also commits the transaction at the end.
+ * 
+ * @author Amala Deshpande and Anshu Tomar
+ *
+ */
 class Transaction {
 
   private TransactionType txn_type;

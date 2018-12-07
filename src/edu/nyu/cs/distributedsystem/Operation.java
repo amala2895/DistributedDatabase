@@ -1,5 +1,12 @@
 package edu.nyu.cs.distributedsystem;
 
+/**
+ * This class holds the operations (read or write). It also stores the variable and its values in
+ * case of write operation.
+ * 
+ * @author Amala Deshpande and Anshu Tomar
+ *
+ */
 class Operation {
   private int transaction_id;
   private int variable_id;

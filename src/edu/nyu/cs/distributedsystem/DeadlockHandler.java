@@ -6,7 +6,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class DeadlockHandler {
+/**
+ * This class maintains the graph of transaction dependencies and detects deadlock in the graph.
+ * 
+ * @author Amala Deshpande and Anshu Tomar
+ *
+ */
+class DeadlockHandler {
   // key is dependent
   private static Map<Integer, List<Integer>> transaction_dependency_graph =
       new HashMap<Integer, List<Integer>>();
