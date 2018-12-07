@@ -46,9 +46,12 @@ class DeadlockHandler {
 
 
     // Remove the edge which contains dependent_trans as value
-
-    for (Integer key : transaction_dependency_graph.keySet()) {
-      List<Integer> value = transaction_dependency_graph.get(key);
+    Iterator<Map.Entry<Integer, List<Integer>>> it=transaction_dependency_graph.entrySet().iterator();
+    
+    //System.out.println("GRAPH" + transaction_dependency_graph.toString());
+    while (it.hasNext()) {
+    	 Map.Entry<Integer, List<Integer>> pair = (Map.Entry<Integer, List<Integer>>) it.next();
+         List<Integer> value = pair.getValue();
 
       if (value.isEmpty()) {
 
@@ -62,13 +65,14 @@ class DeadlockHandler {
 
           itr.remove();
         }
+      }
         if (value.isEmpty()) {
 
-          transaction_dependency_graph.remove(key);
+          it.remove();
         } else {
-          transaction_dependency_graph.put(key, value);
+          //transaction_dependency_graph.put(key, value);
         }
-      }
+      
 
     }
   }
@@ -98,19 +102,30 @@ class DeadlockHandler {
     return false;
   }
 
-  static boolean isThereACycleInGraph(int T1, int T2) {
+  static boolean isThereACycleInGraph(int T1, int T2, List<Integer> list) {
 
 
     if (transaction_dependency_graph.containsKey(T2)) {
+    	
+      //System.out.println("Next in queue "+ T2);
+      list.add(T2);
       List<Integer> t = transaction_dependency_graph.get(T2);
+      
+      
 
       for (Integer e : t) {
-        if (e == T1)
+    	  
+        if (e == T1) {
+          //System.out.println("List contents are" + list.toString());
           return true;
+        }
 
-        return isThereACycleInGraph(T1, e);
+        return isThereACycleInGraph(T1, e,list);
       }
     }
+    if(!list.isEmpty())
+    	list.remove(list.size()-1);
+    
     return false;
 
   }

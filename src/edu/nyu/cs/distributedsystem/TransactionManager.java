@@ -392,28 +392,29 @@ public class TransactionManager {
 
 
     // check if there is a deadlock
-    if (DeadlockHandler.isThereACycleInGraph(trans_id, independent_trans_id)) {
-
-      System.out.println("Cycle in graph. DEADLOCK");
-      // deadlock found
-      // Abort the latest transaction
-      Transaction t1 = transactions.get(trans_id);
-      Transaction t2 = transactions.get(independent_trans_id);
-      // List<Integer> freedTrans = new ArrayList<Integer>();
-      // System.out.println("t1:" + t1.getStartTime() + " t2:" + t2.getStartTime());
-      if (t1.getStartTime() <= t2.getStartTime()) {
-
-        // freedTrans = DeadlockHandler.getFreedTransactions(trans_id);
-        releaseResources(independent_trans_id);
-        System.out.println("Aborted : T" + independent_trans_id);
-      } else {
-        // freedTrans = DeadlockHandler.getFreedTransactions(independent_trans_id);
-        releaseResources(trans_id);
-        System.out.println("Aborted : T" + trans_id);
+	List<Integer> txnsInCycle = new ArrayList<Integer>();
+	txnsInCycle.add(trans_id);
+    if (DeadlockHandler.isThereACycleInGraph(trans_id, independent_trans_id,txnsInCycle)) {
+      //System.out.println("List contents are" + txnsInCycle.toString());
+      long youngestTxnTime = transactions.get(txnsInCycle.get(0)).getStartTime();
+      Integer youngestTxnId = txnsInCycle.get(0);
+      for(Integer t : txnsInCycle) {
+    	  if (youngestTxnTime < transactions.get(t).getStartTime()) {
+    		  youngestTxnTime = transactions.get(t).getStartTime();
+    		  youngestTxnId = t;
+    	  }
       }
-
+       
+      
+      
+      System.out.println("Cycle in graph. DEADLOCK");
+      System.out.println("Aborted : T" + youngestTxnId);
+      
+      if(youngestTxnId != trans_id &&  youngestTxnId != independent_trans_id )
+    	  DeadlockHandler.addDependencyEdge(independent_trans_id, trans_id);
+      
+      releaseResources(youngestTxnId);
       clearWaitingOperations();
-
       return false;
     }
 
