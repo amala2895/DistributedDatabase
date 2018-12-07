@@ -196,7 +196,7 @@ public class TransactionManager {
 
     if (txn.checkForWrite(var_id, oper.getValue())) {
       // checking value in own
-      System.out.println("own variable write");
+      System.out.println("writing new value to self locked variable");
       return true;
     }
 
@@ -256,71 +256,15 @@ public class TransactionManager {
 
       System.out.println("writeOperation::Variable is locked");
       int independent_trans_id = transaction_variable_map.get(var_id);
-      if (independent_trans_id == trans_id) {
-        // self lock
-        // had a read lock on the same variable that want to write so we need to upgrade the locks
-
-
-
-        System.out.println("writeOperation::Variable self read locked");
-        // getting all variable copies
-        variableList = writelockVariable(var_id);
-
-        if (var_id % 2 == 0) {
-          for (int j = 1; j <= 10; j++) {
-
-            // Check for the site availability before making any operation
-            // if(sites.get(j).getSiteStatus() != SiteStatus.DOWN)
-            // {
-            if (sites.get(j).getVariable(var_id).isJustRecovered()) {
-              sites.get(j).getVariable(var_id).setJustRecovered(false);
-              sites.get(j).changeRecoveringStatus();
-            }
-            // TO DO ..check all the variable on the site
-            // If justRecovered is set to false for each and site was recovering
-            // set it to UP.
-
-            // }
-          }
-        } else {
-          for (int j = 1; j <= 10; j++) {
-            if (j == 1 + var_id % 10) {
-              if (sites.get(j).getVariable(var_id).isJustRecovered()) {
-                sites.get(j).getVariable(var_id).setJustRecovered(false);
-                sites.get(j).changeRecoveringStatus();
-              }
-              // TO DO ..check all the variable on the site
-              // If justRecovered is set to false for each and site was recovering
-              // set it to UP.
-            }
-          }
-        }
-
-        // not sure about use of this below statement
-        txn.addOperationToTransaction(oper);
-
-        // add to transaction variable-transaction map
-        addVariableToMap(trans_id, var_id);
-
-        // since we got the lock we can execute it
-        // add all the variables of each site to the commit map of transaction
-        for (Variable v : variableList) {
-
-          txn.addOperationToCommitMap(v, oper.getValue());
-        }
-
-
-
-        return true;
-      } else {
-        if (checkAndAddDependency(trans_id, independent_trans_id)) {
+      
+      if (checkAndAddDependency(trans_id, independent_trans_id)) {
 
           if (!alreadyWaiting(txn, oper)) {
             System.out.println("writeOperation:: Not already waiting");
             Tuple<Transaction, Operation> t = new Tuple<Transaction, Operation>(txn, oper);
             waitingOperations.add(t);
 
-          }
+       
 
         }
       }
@@ -424,7 +368,8 @@ public class TransactionManager {
     int var_id = oper.getvarid();
     int trans_id = txn.getId();
 
-    // **********this should come after checking middle transaction
+    //If the transaction has write lock on the variable already, it should
+    // read the new value from its local copy.
     if (txn.checkForRead(var_id)) {
       // reading value from commit map in transaction class
       return true;
