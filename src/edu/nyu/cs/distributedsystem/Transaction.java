@@ -15,6 +15,7 @@ import java.util.Map.Entry;
  */
 class Transaction {
 
+	
   private TransactionType txn_type;
   private int txn_id;
   private long txn_start_time;
