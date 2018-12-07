@@ -38,7 +38,7 @@ class DeadlockHandler {
 
 
   static void removeDependencyEdge(int dependent_trans) {
-    System.out.println("Removing dependency edge " + dependent_trans);
+    // System.out.println("Removing dependency edge " + dependent_trans);
     // Remove the edge which contains dependent_trans as key
     if (transaction_dependency_graph.containsKey(dependent_trans))
       transaction_dependency_graph.remove(dependent_trans);

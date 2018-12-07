@@ -15,7 +15,7 @@ import java.util.Map.Entry;
  */
 class Transaction {
 
-	
+
   private TransactionType txn_type;
   private int txn_id;
   private long txn_start_time;
@@ -60,7 +60,7 @@ class Transaction {
   }
 
   void addOperationToCommitMap(Variable v, int i) {
-    System.out.println("Writing to variable x" + v.getIndex() + ": " + i);
+    // System.out.println("Writing to variable x" + v.getIndex() + ": " + i);
     commitmap.put(v, i);
   }
 
@@ -107,13 +107,13 @@ class Transaction {
 
   void readVariableReadOnly(Integer var_id) {
     if (readOnlyVarMap.containsKey(var_id)) {
-      System.out.println("Read value of x_" + var_id + ": " + readOnlyVarMap.get(var_id));
+      System.out.println("x" + var_id + ": " + readOnlyVarMap.get(var_id));
     }
   }
 
   void readOperation(Variable v) {
 
-    System.out.println("Read value of x" + v.getIndex() + ": " + v.getVal());
+    System.out.println("x" + v.getIndex() + ": " + v.getVal());
 
   }
 
