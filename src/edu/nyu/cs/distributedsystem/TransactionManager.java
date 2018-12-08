@@ -392,30 +392,34 @@ public class TransactionManager {
 
 
     // check if there is a deadlock
-	List<Integer> txnsInCycle = new ArrayList<Integer>();
-	txnsInCycle.add(trans_id);
-    if (DeadlockHandler.isThereACycleInGraph(trans_id, independent_trans_id,txnsInCycle)) {
-      //System.out.println("List contents are" + txnsInCycle.toString());
+    List<Integer> txnsInCycle = new ArrayList<Integer>();
+    txnsInCycle.add(trans_id);
+    if (DeadlockHandler.isThereACycleInGraph(trans_id, independent_trans_id, txnsInCycle)) {
+      // System.out.println("List contents are" + txnsInCycle.toString());
       long youngestTxnTime = transactions.get(txnsInCycle.get(0)).getStartTime();
       Integer youngestTxnId = txnsInCycle.get(0);
-      for(Integer t : txnsInCycle) {
-    	  if (youngestTxnTime < transactions.get(t).getStartTime()) {
-    		  youngestTxnTime = transactions.get(t).getStartTime();
-    		  youngestTxnId = t;
-    	  }
+      for (Integer t : txnsInCycle) {
+        if (youngestTxnTime < transactions.get(t).getStartTime()) {
+          youngestTxnTime = transactions.get(t).getStartTime();
+          youngestTxnId = t;
+        }
       }
-       
-      
-      
+
+
+
       System.out.println("Cycle in graph. DEADLOCK");
       System.out.println("Aborted : T" + youngestTxnId);
-      
-      if(youngestTxnId != trans_id &&  youngestTxnId != independent_trans_id )
-    	  DeadlockHandler.addDependencyEdge(independent_trans_id, trans_id);
-      
       releaseResources(youngestTxnId);
       clearWaitingOperations();
+      if (youngestTxnId != trans_id && youngestTxnId != independent_trans_id) {
+        DeadlockHandler.addDependencyEdge(independent_trans_id, trans_id);
+        return true;
+      }
+
+
+
       return false;
+
     }
 
     else {

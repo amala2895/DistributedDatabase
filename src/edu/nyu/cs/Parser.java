@@ -41,7 +41,7 @@ public class Parser {
    * 
    * @param line
    */
-  private static void parse(String line) {
+  public static void parse(String line) {
     line = line.replaceAll("\\s+", "");
 
     if (line.startsWith("begin")) {

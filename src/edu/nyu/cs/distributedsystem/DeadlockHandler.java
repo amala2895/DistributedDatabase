@@ -46,12 +46,13 @@ class DeadlockHandler {
 
 
     // Remove the edge which contains dependent_trans as value
-    Iterator<Map.Entry<Integer, List<Integer>>> it=transaction_dependency_graph.entrySet().iterator();
-    
-    //System.out.println("GRAPH" + transaction_dependency_graph.toString());
+    Iterator<Map.Entry<Integer, List<Integer>>> it =
+        transaction_dependency_graph.entrySet().iterator();
+
+    // System.out.println("GRAPH" + transaction_dependency_graph.toString());
     while (it.hasNext()) {
-    	 Map.Entry<Integer, List<Integer>> pair = (Map.Entry<Integer, List<Integer>>) it.next();
-         List<Integer> value = pair.getValue();
+      Map.Entry<Integer, List<Integer>> pair = (Map.Entry<Integer, List<Integer>>) it.next();
+      List<Integer> value = pair.getValue();
 
       if (value.isEmpty()) {
 
@@ -66,13 +67,14 @@ class DeadlockHandler {
           itr.remove();
         }
       }
-        if (value.isEmpty()) {
 
-          it.remove();
-        } else {
-          //transaction_dependency_graph.put(key, value);
-        }
-      
+      if (value.isEmpty()) {
+
+        it.remove();
+      } else {
+        // transaction_dependency_graph.put(key, value);
+      }
+
 
     }
   }
@@ -106,26 +108,26 @@ class DeadlockHandler {
 
 
     if (transaction_dependency_graph.containsKey(T2)) {
-    	
-      //System.out.println("Next in queue "+ T2);
+
+      // System.out.println("Next in queue "+ T2);
       list.add(T2);
       List<Integer> t = transaction_dependency_graph.get(T2);
-      
-      
+
+
 
       for (Integer e : t) {
-    	  
+
         if (e == T1) {
-          //System.out.println("List contents are" + list.toString());
+          // System.out.println("List contents are" + list.toString());
           return true;
         }
 
-        return isThereACycleInGraph(T1, e,list);
+        return isThereACycleInGraph(T1, e, list);
       }
     }
-    if(!list.isEmpty())
-    	list.remove(list.size()-1);
-    
+    if (!list.isEmpty())
+      list.remove(list.size() - 1);
+
     return false;
 
   }
